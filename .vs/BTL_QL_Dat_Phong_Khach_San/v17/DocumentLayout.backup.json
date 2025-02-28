@@ -1,0 +1,99 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\BTL_QL_Dat_Phong_Khach_San\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|d:\\btl_ql_dat_phong_khach_san\\fphong.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|solutionrelative:fphong.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|D:\\BTL_QL_Dat_Phong_Khach_San\\dao\\phongdao.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|solutionrelative:dao\\phongdao.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|D:\\BTL_QL_Dat_Phong_Khach_San\\fphong.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|solutionrelative:fphong.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|D:\\BTL_QL_Dat_Phong_Khach_San\\dto\\phongdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2C78E500-EBB2-44C9-8728-73FE5AB93878}|BTL_QL_Dat_Phong_Khach_San.csproj|solutionrelative:dto\\phongdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{fbcae063-e2c0-4ab1-a516-996ea3dafb72}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "fPhong.cs",
+              "DocumentMoniker": "D:\\BTL_QL_Dat_Phong_Khach_San\\fPhong.cs",
+              "RelativeDocumentMoniker": "fPhong.cs",
+              "ToolTip": "D:\\BTL_QL_Dat_Phong_Khach_San\\fPhong.cs",
+              "RelativeToolTip": "fPhong.cs",
+              "ViewState": "AgIAAOoAAAAAAAAAAAAwwA4BAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-28T08:13:57.889Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "fPhong.cs [Design]",
+              "DocumentMoniker": "D:\\BTL_QL_Dat_Phong_Khach_San\\fPhong.cs",
+              "RelativeDocumentMoniker": "fPhong.cs",
+              "ToolTip": "D:\\BTL_QL_Dat_Phong_Khach_San\\fPhong.cs [Design]",
+              "RelativeToolTip": "fPhong.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-28T08:13:33.48Z",
+              "EditorCaption": " [Design]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PhongDAO.cs",
+              "DocumentMoniker": "D:\\BTL_QL_Dat_Phong_Khach_San\\DAO\\PhongDAO.cs",
+              "RelativeDocumentMoniker": "DAO\\PhongDAO.cs",
+              "ToolTip": "D:\\BTL_QL_Dat_Phong_Khach_San\\DAO\\PhongDAO.cs",
+              "RelativeToolTip": "DAO\\PhongDAO.cs",
+              "ViewState": "AgIAAE8AAAAAAAAAAAAwwHMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-28T08:13:23.972Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "PhongDTO.cs",
+              "DocumentMoniker": "D:\\BTL_QL_Dat_Phong_Khach_San\\DTO\\PhongDTO.cs",
+              "RelativeDocumentMoniker": "DTO\\PhongDTO.cs",
+              "ToolTip": "D:\\BTL_QL_Dat_Phong_Khach_San\\DTO\\PhongDTO.cs",
+              "RelativeToolTip": "DTO\\PhongDTO.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAwCAAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-28T08:12:56.224Z"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
