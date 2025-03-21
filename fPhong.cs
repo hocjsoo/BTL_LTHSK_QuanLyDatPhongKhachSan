@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Windows.Forms;
 using BTL_QL_Dat_Phong_Khach_San.DAO;
 using BTL_QL_Dat_Phong_Khach_San.DTO;
-using System.Globalization;
 
 namespace BTL_QL_Dat_Phong_Khach_San
 {
@@ -12,11 +11,14 @@ namespace BTL_QL_Dat_Phong_Khach_San
     {
         private string maNhanVien;
         private List<PhongDTO> danhSachPhong;
+        private PhongDTO selectedPhong;
 
         public fPhong(string maNhanVien)
         {
             InitializeComponent();
-            this.maNhanVien = maNhanVien;
+            this.maNhanVien = maNhanVien ?? "NV001";
+            this.danhSachPhong = new List<PhongDTO>();
+            this.selectedPhong = null;
             LoadComboBoxLoaiPhong();
             LoadComboBoxTang();
             LoadComboBoxTrangThai();
@@ -48,7 +50,7 @@ namespace BTL_QL_Dat_Phong_Khach_San
 
         private void LoadComboBoxTrangThai()
         {
-            List<string> trangThaiList = new List<string> { "", "Trống", "Đã đặt" };
+            List<string> trangThaiList = new List<string> { "", "Trống", "Đã đặt", "Đang sử dụng" };
             cbxTrangThai.DataSource = trangThaiList;
             if (cbxTrangThai.Items.Count > 0)
                 cbxTrangThai.SelectedIndex = 0;
@@ -67,132 +69,212 @@ namespace BTL_QL_Dat_Phong_Khach_San
                 cbxTang.SelectedIndex = 0;
             if (cbxTrangThai.Items.Count > 0)
                 cbxTrangThai.SelectedIndex = 0;
-            txtMaPhong.ReadOnly = false;
+            selectedPhong = null;
         }
 
         private void HienThiPhongTrongPanel(List<PhongDTO> phongList)
         {
-            pnlPhong.Controls.Clear(); // Xóa các control cũ trong Panel
-            int x = 10, y = 10, width = 100, height = 80, padding = 10;
+            pnlPhong.Controls.Clear();
+            int x = 10, y = 10;
+            int panelWidth = 150, panelHeight = 100;
+            int spacing = 10;
 
             foreach (PhongDTO phong in phongList)
             {
-                Button btnPhong = new Button
+                Panel phongPanel = new Panel
                 {
-                    Text = $"{phong.MaPhong}\n{phong.LoaiPhong}\n{phong.GiaPhong:N0}\n{phong.TrangThai}\nTầng: {phong.Tang}", // Hiển thị đầy đủ thông tin
-                    Size = new Size(width, height),
+                    Size = new Size(panelWidth, panelHeight),
                     Location = new Point(x, y),
-                    Tag = phong // Lưu thông tin phòng vào Tag để sử dụng sau
+                    BorderStyle = BorderStyle.FixedSingle,
+                    BackColor = phong.TrangThai == "Trống" ? Color.LightGreen : Color.LightCoral,
+                    Tag = phong
                 };
 
-                // Đổi màu nền dựa trên trạng thái
-                if (phong.TrangThai == "Trống")
-                    btnPhong.BackColor = Color.LightGreen;
-                else
-                    btnPhong.BackColor = Color.LightCoral;
+                Label lblMaPhong = new Label
+                {
+                    Text = $"Phòng: {phong.MaPhong}",
+                    Location = new Point(10, 10),
+                    AutoSize = true
+                };
+                Label lblLoaiPhong = new Label
+                {
+                    Text = $"Loại: {phong.LoaiPhong}",
+                    Location = new Point(10, 30),
+                    AutoSize = true
+                };
+                Label lblGiaPhong = new Label
+                {
+                    Text = $"Giá: {phong.GiaPhong:N0}",
+                    Location = new Point(10, 50),
+                    AutoSize = true
+                };
+                Label lblTrangThai = new Label
+                {
+                    Text = $"Trạng Thái: {phong.TrangThai}",
+                    Location = new Point(10, 70),
+                    AutoSize = true
+                };
 
-                btnPhong.Click += BtnPhong_Click;
-                pnlPhong.Controls.Add(btnPhong);
+                phongPanel.Controls.Add(lblMaPhong);
+                phongPanel.Controls.Add(lblLoaiPhong);
+                phongPanel.Controls.Add(lblGiaPhong);
+                phongPanel.Controls.Add(lblTrangThai);
+                phongPanel.Click += PhongPanel_Click;
 
-                x += width + padding;
-                if (x + width > pnlPhong.Width)
+                pnlPhong.Controls.Add(phongPanel);
+
+                x += panelWidth + spacing;
+                if (x + panelWidth > pnlPhong.Width)
                 {
                     x = 10;
-                    y += height + padding;
+                    y += panelHeight + spacing;
                 }
             }
         }
 
-        private void BtnPhong_Click(object sender, EventArgs e)
+        private void PhongPanel_Click(object sender, EventArgs e)
         {
-            Button btn = sender as Button;
-            PhongDTO phong = btn.Tag as PhongDTO;
+            Panel panel = sender as Panel;
+            selectedPhong = panel.Tag as PhongDTO;
+            txtMaPhong.Text = selectedPhong.MaPhong;
+            cbxLoaiPhong.SelectedItem = selectedPhong.LoaiPhong;
+            cbxTang.SelectedItem = int.Parse(selectedPhong.MaPhong.Substring(1, 1)); // Giả sử mã phòng có dạng P1xx
+            txtGiaPhong.Text = selectedPhong.GiaPhong.ToString("N0");
+            cbxTrangThai.SelectedItem = selectedPhong.TrangThai;
+        }
 
-            txtMaPhong.Text = phong.MaPhong;
-            cbxLoaiPhong.Text = phong.LoaiPhong;
-            txtGiaPhong.Text = phong.GiaPhong.ToString();
-            cbxTang.Text = phong.Tang.ToString();
-            cbxTrangThai.Text = phong.TrangThai;
-            txtMaPhong.ReadOnly = true;
+        private void btnTimKiem_Click(object sender, EventArgs e)
+        {
+            string timKiem = txtTimKiem.Text.Trim();
+            string loaiPhong = cbxLoaiPhong.SelectedItem?.ToString();
+            int? tang = cbxTang.SelectedItem as int?;
+            string trangThai = cbxTrangThai.SelectedItem?.ToString();
+            decimal? giaTu = null, giaDen = null;
+
+            if (!string.IsNullOrEmpty(txtGiaTu.Text) && decimal.TryParse(txtGiaTu.Text, out decimal giaTuValue))
+                giaTu = giaTuValue;
+            if (!string.IsNullOrEmpty(txtGiaDen.Text) && decimal.TryParse(txtGiaDen.Text, out decimal giaDenValue))
+                giaDen = giaDenValue;
+
+            List<PhongDTO> filteredPhong = PhongDAO.Instance.SearchPhong(timKiem, loaiPhong, trangThai, tang, giaTu, giaDen);
+            HienThiPhongTrongPanel(filteredPhong);
         }
 
         private void btnThem_Click(object sender, EventArgs e)
         {
             string maPhong = txtMaPhong.Text.Trim();
-            string loaiPhong = cbxLoaiPhong.Text.Trim();
-            string giaPhongText = txtGiaPhong.Text.Trim();
+            string loaiPhong = cbxLoaiPhong.SelectedItem?.ToString();
             int tang = (int)cbxTang.SelectedItem;
-            string trangThai = cbxTrangThai.Text.Trim();
-
-            if (string.IsNullOrEmpty(maPhong) || string.IsNullOrEmpty(loaiPhong) || string.IsNullOrEmpty(giaPhongText) || string.IsNullOrEmpty(trangThai))
-            {
-                MessageBox.Show("Vui lòng nhập đầy đủ mã phòng, loại phòng, giá phòng và trạng thái!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (!decimal.TryParse(giaPhongText, out decimal giaPhong) || giaPhong < 0)
+            string trangThai = cbxTrangThai.SelectedItem?.ToString();
+            if (!decimal.TryParse(txtGiaPhong.Text, out decimal giaPhong) || giaPhong <= 0)
             {
                 MessageBox.Show("Giá phòng không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (PhongDAO.Instance.InsertPhong(maPhong, loaiPhong, giaPhong, tang, trangThai))
+            if (string.IsNullOrEmpty(maPhong) || string.IsNullOrEmpty(loaiPhong) || string.IsNullOrEmpty(trangThai))
             {
-                MessageBox.Show("Thêm phòng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadPhong();
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-            else
+
+            // Kiểm tra mã phòng có tồn tại không
+            if (PhongDAO.Instance.CheckPhongExists(maPhong))
             {
-                MessageBox.Show("Thêm phòng thất bại! Mã phòng có thể đã tồn tại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Mã phòng đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                PhongDTO phong = new PhongDTO(maPhong, loaiPhong, giaPhong, trangThai);
+                if (PhongDAO.Instance.InsertPhong(phong))
+                {
+                    MessageBox.Show("Thêm phòng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadPhong();
+                }
+                else
+                {
+                    MessageBox.Show("Thêm phòng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi thêm phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btnSua_Click(object sender, EventArgs e)
         {
-            string maPhong = txtMaPhong.Text.Trim();
-            string loaiPhong = cbxLoaiPhong.Text.Trim();
-            string giaPhongText = txtGiaPhong.Text.Trim();
-            int tang = (int)cbxTang.SelectedItem;
-            string trangThai = cbxTrangThai.Text.Trim();
-
-            if (string.IsNullOrEmpty(maPhong))
+            if (selectedPhong == null)
             {
-                MessageBox.Show("Vui lòng chọn phòng để sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui lòng chọn phòng để sửa!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (!decimal.TryParse(giaPhongText, out decimal giaPhong) || giaPhong < 0)
+            string maPhong = txtMaPhong.Text.Trim();
+            string loaiPhong = cbxLoaiPhong.SelectedItem?.ToString();
+            int tang = (int)cbxTang.SelectedItem;
+            string trangThai = cbxTrangThai.SelectedItem?.ToString();
+            if (!decimal.TryParse(txtGiaPhong.Text, out decimal giaPhong) || giaPhong <= 0)
             {
                 MessageBox.Show("Giá phòng không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (PhongDAO.Instance.UpdatePhong(maPhong, loaiPhong, giaPhong, tang, trangThai))
+            if (string.IsNullOrEmpty(maPhong) || string.IsNullOrEmpty(loaiPhong) || string.IsNullOrEmpty(trangThai))
             {
-                MessageBox.Show("Sửa phòng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadPhong();
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-            else
+
+            // Kiểm tra mã phòng có thay đổi không, nếu thay đổi thì kiểm tra trùng
+            if (maPhong != selectedPhong.MaPhong && PhongDAO.Instance.CheckPhongExists(maPhong))
             {
-                MessageBox.Show("Sửa phòng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Mã phòng đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                PhongDTO phong = new PhongDTO(maPhong, loaiPhong, giaPhong, trangThai);
+                if (PhongDAO.Instance.UpdatePhong(selectedPhong.MaPhong, phong))
+                {
+                    MessageBox.Show("Sửa phòng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadPhong();
+                }
+                else
+                {
+                    MessageBox.Show("Sửa phòng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi sửa phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btnXoa_Click(object sender, EventArgs e)
         {
-            string maPhong = txtMaPhong.Text.Trim();
-
-            if (string.IsNullOrEmpty(maPhong))
+            if (selectedPhong == null)
             {
-                MessageBox.Show("Vui lòng chọn phòng để xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui lòng chọn phòng để xóa!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (MessageBox.Show("Bạn có chắc muốn xóa phòng này?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            // Kiểm tra phòng có đang được đặt không
+            if (PhongDAO.Instance.CheckPhongInUse(selectedPhong.MaPhong))
+            {
+                MessageBox.Show("Phòng đang được đặt, không thể xóa!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            DialogResult result = MessageBox.Show($"Bạn có chắc chắn muốn xóa phòng {selectedPhong.MaPhong}?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
             {
                 try
                 {
-                    if (PhongDAO.Instance.DeletePhong(maPhong))
+                    if (PhongDAO.Instance.DeletePhong(selectedPhong.MaPhong))
                     {
                         MessageBox.Show("Xóa phòng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadPhong();
@@ -204,63 +286,16 @@ namespace BTL_QL_Dat_Phong_Khach_San
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Lỗi khi xóa phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-            }
-        }
-
-        private void btnTimKiem_Click(object sender, EventArgs e)
-        {
-            string maPhong = txtTimKiem.Text.Trim();
-            string loaiPhong = cbxLoaiPhong.Text.Trim();
-            string giaTuText = txtGiaTu.Text.Trim();
-            string giaDenText = txtGiaDen.Text.Trim();
-            int? tang = cbxTang.SelectedIndex > 0 ? (int?)cbxTang.SelectedItem : null;
-            string trangThai = cbxTrangThai.Text.Trim();
-
-            decimal? giaTu = null, giaDen = null;
-
-            // Xử lý định dạng giá, chấp nhận cả dấu phẩy và dấu chấm
-            if (!string.IsNullOrEmpty(giaTuText))
-            {
-                giaTuText = giaTuText.Replace(",", "."); // Chuyển dấu phẩy thành dấu chấm
-                if (!decimal.TryParse(giaTuText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal giaTuValue) || giaTuValue < 0)
-                {
-                    MessageBox.Show("Giá từ không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                giaTu = giaTuValue;
-            }
-
-            if (!string.IsNullOrEmpty(giaDenText))
-            {
-                giaDenText = giaDenText.Replace(",", "."); // Chuyển dấu phẩy thành dấu chấm
-                if (!decimal.TryParse(giaDenText, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal giaDenValue) || giaDenValue < 0)
-                {
-                    MessageBox.Show("Giá đến không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                giaDen = giaDenValue;
-            }
-
-            if (giaTu.HasValue && giaDen.HasValue && giaTu > giaDen)
-            {
-                MessageBox.Show("Giá từ phải nhỏ hơn hoặc bằng giá đến!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            List<PhongDTO> danhSach = PhongDAO.Instance.SearchPhong(maPhong, loaiPhong, giaTu, giaDen, tang, trangThai);
-            HienThiPhongTrongPanel(danhSach);
-
-            if (danhSach.Count == 0)
-            {
-                MessageBox.Show("Không tìm thấy phòng nào!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
         private void btnLamMoi_Click(object sender, EventArgs e)
         {
+            ClearFields();
             LoadPhong();
+            MessageBox.Show("Đã làm mới!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnDong_Click(object sender, EventArgs e)

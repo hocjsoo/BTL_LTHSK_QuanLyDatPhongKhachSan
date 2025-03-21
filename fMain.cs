@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using BTL_QL_Dat_Phong_Khach_San.DAO;
+using BTL_QL_Dat_Phong_Khach_San.Forms;
 
 namespace BTL_QL_Dat_Phong_Khach_San
 {
@@ -43,7 +44,7 @@ namespace BTL_QL_Dat_Phong_Khach_San
 
         private void btnQLKhachHang_Click(object sender, EventArgs e)
         {
-            fKhachHang form = new fKhachHang(maNhanVien); // Truyền MaNhanVien
+            fKhachHang form = new fKhachHang(); // Truyền MaNhanVien
             this.Hide();
             form.ShowDialog();
             this.Show();
@@ -59,7 +60,7 @@ namespace BTL_QL_Dat_Phong_Khach_San
 
         private void btnQLDichVu_Click(object sender, EventArgs e)
         {
-            fDichVu f = new fDichVu(maNhanVien); // Truyền MaNhanVien
+            fDichVu f = new fDichVu(); // Truyền MaNhanVien
             this.Hide();
             f.ShowDialog();
             this.Show();
@@ -75,7 +76,7 @@ namespace BTL_QL_Dat_Phong_Khach_San
 
         private void button1_Click(object sender, EventArgs e) // Đặt lại tên nút thành btnDangKyDichVu
         {
-            fSDDichVu f = new fSDDichVu(maNhanVien); // Truyền MaNhanVien
+            fDangKyDichVu f = new fDangKyDichVu(maNhanVien); // Truyền MaNhanVien
             this.Hide();
             f.ShowDialog();
             this.Show();

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using BTL_QL_Dat_Phong_Khach_San.DAO;
 using BTL_QL_Dat_Phong_Khach_San.DTO;
 
 namespace BTL_QL_Dat_Phong_Khach_San.DAO
@@ -18,89 +17,103 @@ namespace BTL_QL_Dat_Phong_Khach_San.DAO
 
         private KhachHangDAO() { }
 
-        // Lấy toàn bộ danh sách khách hàng
         public List<KhachHangDTO> GetListKhachHang()
         {
             List<KhachHangDTO> list = new List<KhachHangDTO>();
             string query = "SELECT * FROM KhachHang";
             DataTable data = DataProvider.Instance.ExecuteQuery(query);
-
-            foreach (DataRow item in data.Rows)
+            foreach (DataRow row in data.Rows)
             {
-                KhachHangDTO khachHang = new KhachHangDTO(item);
-                list.Add(khachHang);
+                list.Add(new KhachHangDTO(row));
             }
             return list;
         }
 
-        // Tìm kiếm khách hàng theo CCCD
-        public List<KhachHangDTO> SearchKhachHangByCCCD(string soCCCD)
+        public List<KhachHangDTO> SearchKhachHang(string soCCCD, string hoTen, string soDienThoai, string email)
         {
             List<KhachHangDTO> list = new List<KhachHangDTO>();
-            string query = string.Format("SELECT * FROM KhachHang WHERE SoCCCD LIKE N'%{0}%'", soCCCD);
+            string query = "SELECT * FROM KhachHang WHERE 1=1";
+            if (!string.IsNullOrEmpty(soCCCD))
+                query += $" AND SoCCCD LIKE N'%{soCCCD}%'";
+            if (!string.IsNullOrEmpty(hoTen))
+                query += $" AND HoTen LIKE N'%{hoTen}%'";
+            if (!string.IsNullOrEmpty(soDienThoai))
+                query += $" AND SoDienThoai LIKE N'%{soDienThoai}%'";
+            if (!string.IsNullOrEmpty(email))
+                query += $" AND Email LIKE N'%{email}%'";
             DataTable data = DataProvider.Instance.ExecuteQuery(query);
-
-            foreach (DataRow item in data.Rows)
+            foreach (DataRow row in data.Rows)
             {
-                KhachHangDTO khachHang = new KhachHangDTO(item);
-                list.Add(khachHang);
+                list.Add(new KhachHangDTO(row));
             }
             return list;
         }
 
-        // Tìm kiếm khách hàng theo Họ tên
-        public List<KhachHangDTO> SearchKhachHangByHoTen(string hoTen)
+        public bool InsertKhachHang(KhachHangDTO khachHang)
         {
-            List<KhachHangDTO> list = new List<KhachHangDTO>();
-            string query = string.Format("SELECT * FROM KhachHang WHERE HoTen LIKE N'%{0}%'", hoTen);
-            DataTable data = DataProvider.Instance.ExecuteQuery(query);
-
-            foreach (DataRow item in data.Rows)
+            try
             {
-                KhachHangDTO khachHang = new KhachHangDTO(item);
-                list.Add(khachHang);
+                string ngayTaoFormatted = khachHang.NgayTao.ToString("yyyy-MM-dd HH:mm:ss");
+                string query = $"INSERT INTO KhachHang (SoCCCD, HoTen, SoDienThoai, Email, NgayTao) " +
+                              $"VALUES (N'{khachHang.SoCCCD}', N'{khachHang.HoTen}', N'{khachHang.SoDienThoai}', " +
+                              $"N'{khachHang.Email}', '{ngayTaoFormatted}')";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
             }
-            return list;
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi thêm khách hàng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
         }
 
-        // Thêm khách hàng
-        public bool InsertKhachHang(string soCCCD, string hoTen, string soDienThoai, string email)
+        public bool UpdateKhachHang(string oldSoCCCD, KhachHangDTO khachHang)
         {
-            string query = string.Format("INSERT INTO KhachHang (SoCCCD, HoTen, SoDienThoai, Email) VALUES (N'{0}', N'{1}', N'{2}', N'{3}')",
-                soCCCD, hoTen, soDienThoai, email);
-            int result = DataProvider.Instance.ExecuteNonQuery(query);
-            return result > 0;
+            try
+            {
+                string query = $"UPDATE KhachHang SET SoCCCD = N'{khachHang.SoCCCD}', HoTen = N'{khachHang.HoTen}', " +
+                              $"SoDienThoai = N'{khachHang.SoDienThoai}', Email = N'{khachHang.Email}' " +
+                              $"WHERE SoCCCD = N'{oldSoCCCD}'";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi sửa khách hàng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
         }
 
-        // Sửa khách hàng
-        public bool UpdateKhachHang(string soCCCD, string hoTen, string soDienThoai, string email)
-        {
-            string query = string.Format("UPDATE KhachHang SET HoTen = N'{0}', SoDienThoai = N'{1}', Email = N'{2}' WHERE SoCCCD = N'{3}'",
-                hoTen, soDienThoai, email, soCCCD);
-            int result = DataProvider.Instance.ExecuteNonQuery(query);
-            return result > 0;
-        }
-
-        // Xóa khách hàng
         public bool DeleteKhachHang(string soCCCD)
         {
-            // Kiểm tra tính toàn vẹn dữ liệu trước khi xóa
-            string checkQuery = string.Format("SELECT COUNT(*) FROM DatPhong WHERE SoCCCDKhachHang = N'{0}' UNION ALL SELECT COUNT(*) FROM DangKyDichVu WHERE SoCCCDKhachHang = N'{0}'", soCCCD);
-            DataTable checkData = DataProvider.Instance.ExecuteQuery(checkQuery);
-            int totalCount = 0;
-            foreach (DataRow row in checkData.Rows)
+            try
             {
-                totalCount += Convert.ToInt32(row[0]);
+                string query = $"DELETE FROM KhachHang WHERE SoCCCD = N'{soCCCD}'";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
             }
-
-            if (totalCount > 0)
+            catch (Exception ex)
             {
-                throw new Exception("Không thể xóa khách hàng vì khách hàng đã có giao dịch (đặt phòng hoặc dịch vụ)!");
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi xóa khách hàng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
             }
+        }
 
-            string query = string.Format("DELETE FROM KhachHang WHERE SoCCCD = N'{0}'", soCCCD);
-            int result = DataProvider.Instance.ExecuteNonQuery(query);
-            return result > 0;
+        public bool CheckKhachHangExists(string soCCCD)
+        {
+            string query = $"SELECT COUNT(*) FROM KhachHang WHERE SoCCCD = N'{soCCCD}'";
+            return (int)DataProvider.Instance.ExecuteScalar(query) > 0;
+        }
+
+        public bool CheckKhachHangInUse(string soCCCD)
+        {
+            string query = $"SELECT COUNT(*) FROM DatPhong WHERE SoCCCDKhachHang = N'{soCCCD}' " +
+                          $"UNION ALL " +
+                          $"SELECT COUNT(*) FROM HoaDon WHERE SoCCCDKhachHang = N'{soCCCD}'";
+            DataTable data = DataProvider.Instance.ExecuteQuery(query);
+            foreach (DataRow row in data.Rows)
+            {
+                if ((int)row[0] > 0)
+                    return true;
+            }
+            return false;
         }
     }
 }

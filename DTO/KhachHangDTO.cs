@@ -11,7 +11,6 @@ namespace BTL_QL_Dat_Phong_Khach_San.DTO
         public string Email { get; set; }
         public DateTime NgayTao { get; set; }
 
-        // Constructor nhận các tham số riêng lẻ
         public KhachHangDTO(string soCCCD, string hoTen, string soDienThoai, string email, DateTime ngayTao)
         {
             SoCCCD = soCCCD;
@@ -21,7 +20,6 @@ namespace BTL_QL_Dat_Phong_Khach_San.DTO
             NgayTao = ngayTao;
         }
 
-        // Constructor nhận DataRow (giống FoodDAO)
         public KhachHangDTO(DataRow row)
         {
             SoCCCD = row["SoCCCD"].ToString();

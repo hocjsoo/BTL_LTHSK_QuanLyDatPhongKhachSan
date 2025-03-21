@@ -2,16 +2,24 @@
 {
     public class ChiTietHoaDonDTO
     {
+        public string MaChiTietHoaDon { get; set; }
         public string MaHoaDon { get; set; }
-        public string MaChiTiet { get; set; }
-        public string LoaiChiTiet { get; set; }
+        public string MaDichVu { get; set; } // Thêm thuộc tính này
+        public string LoaiDichVu { get; set; }
+        public string TenDichVu { get; set; }
+        public decimal GiaDichVu { get; set; }
+        public int SoLuong { get; set; }
         public decimal TongChiPhi { get; set; }
 
-        public ChiTietHoaDonDTO(string maHoaDon, string maChiTiet, string loaiChiTiet, decimal tongChiPhi)
+        public ChiTietHoaDonDTO(string maChiTietHoaDon, string maHoaDon, string maDichVu, string loaiDichVu, string tenDichVu, decimal giaDichVu, int soLuong, decimal tongChiPhi)
         {
+            MaChiTietHoaDon = maChiTietHoaDon;
             MaHoaDon = maHoaDon;
-            MaChiTiet = maChiTiet;
-            LoaiChiTiet = loaiChiTiet;
+            MaDichVu = maDichVu;
+            LoaiDichVu = loaiDichVu;
+            TenDichVu = tenDichVu;
+            GiaDichVu = giaDichVu;
+            SoLuong = soLuong;
             TongChiPhi = tongChiPhi;
         }
     }

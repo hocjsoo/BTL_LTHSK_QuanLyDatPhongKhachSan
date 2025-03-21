@@ -11,8 +11,7 @@ namespace BTL_QL_Dat_Phong_Khach_San.DTO
         public decimal TongChiPhi { get; set; }
         public DateTime NgayDangKy { get; set; }
 
-        public DangKyDichVuDTO(string soCCCDKhachHang, string maDichVu, string maNhanVien,
-                               int soLuong, decimal tongChiPhi, DateTime ngayDangKy)
+        public DangKyDichVuDTO(string soCCCDKhachHang, string maDichVu, string maNhanVien, int soLuong, decimal tongChiPhi, DateTime ngayDangKy)
         {
             SoCCCDKhachHang = soCCCDKhachHang;
             MaDichVu = maDichVu;

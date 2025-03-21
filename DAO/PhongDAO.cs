@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
-using BTL_QL_Dat_Phong_Khach_San.DAO;
 using BTL_QL_Dat_Phong_Khach_San.DTO;
 
 namespace BTL_QL_Dat_Phong_Khach_San.DAO
@@ -19,98 +17,116 @@ namespace BTL_QL_Dat_Phong_Khach_San.DAO
 
         private PhongDAO() { }
 
-        // Lấy toàn bộ danh sách phòng
         public List<PhongDTO> GetListPhong()
         {
             List<PhongDTO> list = new List<PhongDTO>();
             string query = "SELECT * FROM Phong";
             DataTable data = DataProvider.Instance.ExecuteQuery(query);
-
-            foreach (DataRow item in data.Rows)
+            foreach (DataRow row in data.Rows)
             {
-                PhongDTO phong = new PhongDTO(item);
-                list.Add(phong);
+                list.Add(new PhongDTO(row));
             }
             return list;
         }
 
-        // Tìm kiếm phòng theo mã, loại, giá, tầng, và trạng thái
-        public List<PhongDTO> SearchPhong(string maPhong, string loaiPhong, decimal? giaTu, decimal? giaDen, int? tang, string trangThai)
+        public List<PhongDTO> SearchPhong(string maPhong, string loaiPhong, string trangThai, int? tang = null, decimal? giaTu = null, decimal? giaDen = null)
         {
             List<PhongDTO> list = new List<PhongDTO>();
             string query = "SELECT * FROM Phong WHERE 1=1";
-
             if (!string.IsNullOrEmpty(maPhong))
-                query += string.Format(" AND MaPhong LIKE N'%{0}%'", maPhong);
-            if (!string.IsNullOrEmpty(loaiPhong))
-                query += string.Format(" AND LoaiPhong = N'{0}'", loaiPhong);
+                query += $" AND MaPhong LIKE N'%{maPhong}%'";
+            if (!string.IsNullOrEmpty(loaiPhong) && loaiPhong != "")
+                query += $" AND LoaiPhong = N'{loaiPhong}'";
+            if (!string.IsNullOrEmpty(trangThai) && trangThai != "")
+                query += $" AND TrangThai = N'{trangThai}'";
+            if (tang.HasValue && tang != 0)
+                query += $" AND MaPhong LIKE N'P{tang}%'";
             if (giaTu.HasValue)
-                query += string.Format(" AND GiaPhong >= {0}", giaTu.Value.ToString("F2", CultureInfo.InvariantCulture));
+                query += $" AND GiaPhong >= {giaTu}";
             if (giaDen.HasValue)
-                query += string.Format(" AND GiaPhong <= {0}", giaDen.Value.ToString("F2", CultureInfo.InvariantCulture));
-            if (tang.HasValue)
-                query += string.Format(" AND Tang = {0}", tang.Value);
-            if (!string.IsNullOrEmpty(trangThai))
-                query += string.Format(" AND TrangThai = N'{0}'", trangThai);
-
+                query += $" AND GiaPhong <= {giaDen}";
             DataTable data = DataProvider.Instance.ExecuteQuery(query);
-
-            foreach (DataRow item in data.Rows)
+            foreach (DataRow row in data.Rows)
             {
-                PhongDTO phong = new PhongDTO(item);
-                list.Add(phong);
+                list.Add(new PhongDTO(row));
             }
             return list;
         }
 
-        // Thêm phòng
-        public bool InsertPhong(string maPhong, string loaiPhong, decimal giaPhong, int tang, string trangThai)
+        public List<PhongDTO> SearchPhong(string maPhong, string loaiPhong, string trangThai)
         {
-            string giaPhongStr = giaPhong.ToString("F2", CultureInfo.InvariantCulture);
-            string query = string.Format("INSERT INTO Phong (MaPhong, LoaiPhong, GiaPhong, Tang, TrangThai) VALUES (N'{0}', N'{1}', {2}, {3}, N'{4}')",
-                maPhong, loaiPhong, giaPhongStr, tang, trangThai);
-            int result = DataProvider.Instance.ExecuteNonQuery(query);
-            return result > 0;
+            return SearchPhong(maPhong, loaiPhong, trangThai, null, null, null);
         }
 
-        // Sửa phòng
-        public bool UpdatePhong(string maPhong, string loaiPhong, decimal giaPhong, int tang, string trangThai)
+        public bool InsertPhong(PhongDTO phong)
         {
-            string giaPhongStr = giaPhong.ToString("F2", CultureInfo.InvariantCulture);
-            string query = string.Format("UPDATE Phong SET LoaiPhong = N'{0}', GiaPhong = {1}, Tang = {2}, TrangThai = N'{3}' WHERE MaPhong = N'{4}'",
-                loaiPhong, giaPhongStr, tang, trangThai, maPhong);
-            int result = DataProvider.Instance.ExecuteNonQuery(query);
-            return result > 0;
+            try
+            {
+                string query = $"INSERT INTO Phong (MaPhong, LoaiPhong, GiaPhong, TrangThai) " +
+                              $"VALUES (N'{phong.MaPhong}', N'{phong.LoaiPhong}', {phong.GiaPhong}, N'{phong.TrangThai}')";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi thêm phòng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
         }
 
-        // Xóa phòng
+        public bool UpdatePhong(string oldMaPhong, PhongDTO phong)
+        {
+            try
+            {
+                string query = $"UPDATE Phong SET MaPhong = N'{phong.MaPhong}', LoaiPhong = N'{phong.LoaiPhong}', " +
+                              $"GiaPhong = {phong.GiaPhong}, TrangThai = N'{phong.TrangThai}' " +
+                              $"WHERE MaPhong = N'{oldMaPhong}'";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi sửa phòng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public bool UpdateTrangThaiPhong(string maPhong, string trangThai)
+        {
+            try
+            {
+                string query = $"UPDATE Phong SET TrangThai = N'{trangThai}' WHERE MaPhong = N'{maPhong}'";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi cập nhật trạng thái phòng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
         public bool DeletePhong(string maPhong)
         {
-            string checkQuery = string.Format("SELECT COUNT(*) FROM DatPhong WHERE MaPhong = N'{0}'", maPhong);
-            object resultCheck = DataProvider.Instance.ExecuteScalar(checkQuery);
-            int count = Convert.ToInt32(resultCheck);
-
-            if (count > 0)
+            try
             {
-                throw new Exception("Không thể xóa phòng vì phòng đã được đặt!");
+                string query = $"DELETE FROM Phong WHERE MaPhong = N'{maPhong}'";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
             }
-
-            string query = string.Format("DELETE FROM Phong WHERE MaPhong = N'{0}'", maPhong);
-            int result = DataProvider.Instance.ExecuteNonQuery(query);
-            return result > 0;
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi xóa phòng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
         }
 
-        // Lấy thông tin phòng theo MaPhong
-        public PhongDTO GetPhongByMaPhong(string maPhong)
+        public bool CheckPhongExists(string maPhong)
         {
-            string query = string.Format("SELECT * FROM Phong WHERE MaPhong = N'{0}'", maPhong);
-            DataTable data = DataProvider.Instance.ExecuteQuery(query);
+            string query = $"SELECT COUNT(*) FROM Phong WHERE MaPhong = N'{maPhong}'";
+            return (int)DataProvider.Instance.ExecuteScalar(query) > 0;
+        }
 
-            if (data.Rows.Count > 0)
-            {
-                return new PhongDTO(data.Rows[0]);
-            }
-            return null;
+        public bool CheckPhongInUse(string maPhong)
+        {
+            string query = $"SELECT COUNT(*) FROM DatPhong WHERE MaPhong = N'{maPhong}' AND NgayTraPhong > GETDATE()";
+            return (int)DataProvider.Instance.ExecuteScalar(query) > 0;
         }
     }
 }

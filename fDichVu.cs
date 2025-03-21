@@ -1,183 +1,155 @@
 ﻿using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Windows.Forms;
 using BTL_QL_Dat_Phong_Khach_San.DAO;
 using BTL_QL_Dat_Phong_Khach_San.DTO;
-using System.Linq;
 
-namespace BTL_QL_Dat_Phong_Khach_San
+namespace BTL_QL_Dat_Phong_Khach_San.Forms
 {
     public partial class fDichVu : Form
     {
-        private string maNhanVien;
+        private DichVuDTO selectedDichVu;
 
-        public fDichVu(string maNhanVien)
+        public fDichVu()
         {
             InitializeComponent();
-            this.maNhanVien = maNhanVien;
-            LoadComboBoxLoaiDichVu(); // Tải ComboBox trước
-            LoadDichVu(); // Sau đó tải danh sách dịch vụ
+            selectedDichVu = null;
+            InitializeForm();
         }
 
-        private void LoadDichVu()
+        private void InitializeForm()
         {
-            List<DichVuDTO> danhSach = DichVuDAO.Instance.GetListDichVu();
-            dgvDichVu.DataSource = danhSach;
-            ClearFields();
+            LoadDanhSachDichVu();
+            LoadLoaiDichVu();
+            ClearForm();
         }
 
-        private void LoadComboBoxLoaiDichVu()
+        private void LoadLoaiDichVu()
         {
-            List<string> loaiDichVuList = DichVuDAO.Instance.GetListLoaiDichVu();
-            loaiDichVuList.Insert(0, ""); // Thêm tùy chọn trống
-
-            // Gán DataSource cho cả hai ComboBox
-            cbxLoaiDichVu.DataSource = loaiDichVuList;
-            cbxTimKiemLoai.DataSource = new List<string>(loaiDichVuList);
-
-            // Đặt SelectedIndex sau khi DataSource đã được gán
+            cbxLoaiDichVu.Items.AddRange(new string[] { "", "Phòng", "Ăn uống", "Vệ sinh", "Vận chuyển" });
             cbxLoaiDichVu.SelectedIndex = 0;
-            cbxTimKiemLoai.SelectedIndex = 0;
         }
 
-        private void ClearFields()
+        private void LoadDanhSachDichVu()
+        {
+            List<DichVuDTO> dichVuList = DichVuDAO.Instance.GetListDichVu();
+            dgvDichVu.DataSource = dichVuList;
+            FormatDataGridView(dgvDichVu, new string[] { "GiaDichVu" });
+        }
+
+        private void ClearForm()
         {
             txtMaDichVu.Clear();
             txtTenDichVu.Clear();
             txtGiaDichVu.Clear();
-            txtTimKiemTen.Clear();
+            cbxLoaiDichVu.SelectedIndex = 0;
+            selectedDichVu = null;
+        }
 
-            // Chỉ gán SelectedIndex nếu DataSource đã được gán
-            if (cbxLoaiDichVu.Items.Count > 0)
-                cbxLoaiDichVu.SelectedIndex = 0;
-            if (cbxTimKiemLoai.Items.Count > 0)
-                cbxTimKiemLoai.SelectedIndex = 0;
+        private void btnTimKiem_Click(object sender, EventArgs e)
+        {
+            string maDichVu = txtTimTheoMaDichVu.Text.Trim();
+            string tenDichVu = txtTimTheoTenDichVu.Text.Trim();
 
-            txtMaDichVu.ReadOnly = false;
+            List<DichVuDTO> dichVuList = DichVuDAO.Instance.SearchDichVu(maDichVu, tenDichVu);
+            dgvDichVu.DataSource = dichVuList;
+            FormatDataGridView(dgvDichVu, new string[] { "GiaDichVu" });
+
+            if (dichVuList.Count == 0)
+                MessageBox.Show("Không tìm thấy dịch vụ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnThem_Click(object sender, EventArgs e)
         {
             string maDichVu = txtMaDichVu.Text.Trim();
             string tenDichVu = txtTenDichVu.Text.Trim();
-            string giaDichVuText = txtGiaDichVu.Text.Trim();
-            string loaiDichVu = cbxLoaiDichVu.Text.Trim();
-
-            if (string.IsNullOrEmpty(maDichVu) || string.IsNullOrEmpty(tenDichVu) || string.IsNullOrEmpty(giaDichVuText))
-            {
-                MessageBox.Show("Vui lòng nhập đầy đủ mã dịch vụ, tên dịch vụ và giá!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (!decimal.TryParse(giaDichVuText, out decimal giaDichVu) || giaDichVu < 0)
+            if (!decimal.TryParse(txtGiaDichVu.Text.Replace(",", ""), out decimal giaDichVu) || giaDichVu <= 0)
             {
                 MessageBox.Show("Giá dịch vụ không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            string loaiDichVu = cbxLoaiDichVu.Text;
+
+            if (string.IsNullOrEmpty(maDichVu) || string.IsNullOrEmpty(tenDichVu) || string.IsNullOrEmpty(loaiDichVu) || loaiDichVu == "")
+            {
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (DichVuDAO.Instance.InsertDichVu(maDichVu, tenDichVu, giaDichVu, loaiDichVu))
             {
+                LoadDanhSachDichVu();
+                ClearForm();
                 MessageBox.Show("Thêm dịch vụ thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadDichVu();
-                LoadComboBoxLoaiDichVu(); // Cập nhật lại ComboBox
             }
             else
             {
-                MessageBox.Show("Thêm dịch vụ thất bại! Mã dịch vụ có thể đã tồn tại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Thêm dịch vụ thất bại! Mã dịch vụ đã tồn tại hoặc lỗi khác.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btnSua_Click(object sender, EventArgs e)
         {
-            string maDichVu = txtMaDichVu.Text.Trim();
-            string tenDichVu = txtTenDichVu.Text.Trim();
-            string giaDichVuText = txtGiaDichVu.Text.Trim();
-            string loaiDichVu = cbxLoaiDichVu.Text.Trim();
-
-            if (string.IsNullOrEmpty(maDichVu))
+            if (selectedDichVu == null)
             {
-                MessageBox.Show("Vui lòng chọn dịch vụ để sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui lòng chọn dịch vụ để sửa!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (!decimal.TryParse(giaDichVuText, out decimal giaDichVu) || giaDichVu < 0)
+            string tenDichVu = txtTenDichVu.Text.Trim();
+            if (!decimal.TryParse(txtGiaDichVu.Text.Replace(",", ""), out decimal giaDichVu) || giaDichVu <= 0)
             {
                 MessageBox.Show("Giá dịch vụ không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+            string loaiDichVu = cbxLoaiDichVu.Text;
 
-            if (DichVuDAO.Instance.UpdateDichVu(maDichVu, tenDichVu, giaDichVu, loaiDichVu))
+            if (string.IsNullOrEmpty(tenDichVu) || string.IsNullOrEmpty(loaiDichVu) || loaiDichVu == "")
             {
-                MessageBox.Show("Sửa dịch vụ thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadDichVu();
-                LoadComboBoxLoaiDichVu(); // Cập nhật lại ComboBox
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (DichVuDAO.Instance.UpdateDichVu(selectedDichVu.MaDichVu, tenDichVu, giaDichVu, loaiDichVu))
+            {
+                LoadDanhSachDichVu();
+                ClearForm();
+                MessageBox.Show("Cập nhật dịch vụ thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                MessageBox.Show("Sửa dịch vụ thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Cập nhật dịch vụ thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btnXoa_Click(object sender, EventArgs e)
         {
-            string maDichVu = txtMaDichVu.Text.Trim();
-
-            if (string.IsNullOrEmpty(maDichVu))
+            if (selectedDichVu == null)
             {
-                MessageBox.Show("Vui lòng chọn dịch vụ để xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui lòng chọn dịch vụ để xóa!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (MessageBox.Show("Bạn có chắc muốn xóa dịch vụ này?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show("Bạn có chắc chắn muốn xóa dịch vụ này?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                try
+                if (DichVuDAO.Instance.DeleteDichVu(selectedDichVu.MaDichVu))
                 {
-                    if (DichVuDAO.Instance.DeleteDichVu(maDichVu))
-                    {
-                        MessageBox.Show("Xóa dịch vụ thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadDichVu();
-                        LoadComboBoxLoaiDichVu(); // Cập nhật lại ComboBox
-                    }
-                    else
-                    {
-                        MessageBox.Show("Xóa dịch vụ thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    LoadDanhSachDichVu();
+                    ClearForm();
+                    MessageBox.Show("Xóa dịch vụ thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Xóa dịch vụ thất bại! Dịch vụ đã được đăng ký.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-        }
-
-        private void btnTimKiem_Click(object sender, EventArgs e)
-        {
-            string tenDichVu = txtTimKiemTen.Text.Trim();
-            string loaiDichVu = cbxTimKiemLoai.Text.Trim();
-
-            List<DichVuDTO> danhSach = DichVuDAO.Instance.GetListDichVu();
-
-            if (!string.IsNullOrEmpty(tenDichVu))
-            {
-                danhSach = DichVuDAO.Instance.SearchDichVuByName(tenDichVu);
-            }
-
-            if (!string.IsNullOrEmpty(loaiDichVu))
-            {
-                danhSach = danhSach.Where(d => d.LoaiDichVu == loaiDichVu).ToList();
-            }
-
-            if (danhSach.Count == 0)
-            {
-                MessageBox.Show("Không tìm thấy dịch vụ nào!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-
-            dgvDichVu.DataSource = danhSach;
         }
 
         private void btnLamMoi_Click(object sender, EventArgs e)
         {
-            LoadDichVu();
+            ClearForm();
+            LoadDanhSachDichVu();
+            MessageBox.Show("Đã làm mới!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnDong_Click(object sender, EventArgs e)
@@ -190,11 +162,26 @@ namespace BTL_QL_Dat_Phong_Khach_San
             if (e.RowIndex >= 0)
             {
                 DataGridViewRow row = dgvDichVu.Rows[e.RowIndex];
-                txtMaDichVu.Text = row.Cells["MaDichVu"].Value.ToString();
-                txtTenDichVu.Text = row.Cells["TenDichVu"].Value.ToString();
-                txtGiaDichVu.Text = row.Cells["GiaDichVu"].Value.ToString();
-                cbxLoaiDichVu.Text = row.Cells["LoaiDichVu"].Value.ToString();
-                txtMaDichVu.ReadOnly = true;
+                // Tạo đối tượng DichVuDTO từ dữ liệu trong DataGridViewRow
+                selectedDichVu = new DichVuDTO(
+                    row.Cells["MaDichVu"].Value?.ToString() ?? "",
+                    row.Cells["TenDichVu"].Value?.ToString() ?? "",
+                    Convert.ToDecimal(row.Cells["GiaDichVu"].Value ?? 0),
+                    row.Cells["LoaiDichVu"].Value?.ToString() ?? ""
+                );
+                txtMaDichVu.Text = selectedDichVu.MaDichVu;
+                txtTenDichVu.Text = selectedDichVu.TenDichVu;
+                txtGiaDichVu.Text = selectedDichVu.GiaDichVu.ToString("N0");
+                cbxLoaiDichVu.Text = selectedDichVu.LoaiDichVu;
+            }
+        }
+
+        private void FormatDataGridView(DataGridView dgv, string[] columnsToFormat)
+        {
+            foreach (var column in columnsToFormat)
+            {
+                if (dgv.Columns[column] != null)
+                    dgv.Columns[column].DefaultCellStyle.Format = "N0";
             }
         }
     }
