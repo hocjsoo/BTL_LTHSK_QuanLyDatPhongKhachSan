@@ -1,0 +1,14 @@
+<DataSet>
+	<Table>
+		<MaDichVu>DV001</MaDichVu>
+		<TenDichVu>Dịch vụ ăn uống</TenDichVu>
+		<SoLuong>2</SoLuong>
+		<TongChiPhi>200000</TongChiPhi>
+	</Table>
+	<Table>
+		<MaDichVu>DV002</MaDichVu>
+		<TenDichVu>Dịch vụ vệ sinh</TenDichVu>
+		<SoLuong>1</SoLuong>
+		<TongChiPhi>100000</TongChiPhi>
+	</Table>
+</DataSet>

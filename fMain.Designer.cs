@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.btnDatPhong = new System.Windows.Forms.Button();
-            this.btnNhanPhong = new System.Windows.Forms.Button();
             this.btnTKDoanhThu = new System.Windows.Forms.Button();
             this.btnQLPhong = new System.Windows.Forms.Button();
             this.btnQLNhanVien = new System.Windows.Forms.Button();
@@ -52,23 +51,11 @@
             this.btnDatPhong.ForeColor = System.Drawing.Color.White;
             this.btnDatPhong.Location = new System.Drawing.Point(38, 102);
             this.btnDatPhong.Name = "btnDatPhong";
-            this.btnDatPhong.Size = new System.Drawing.Size(106, 201);
+            this.btnDatPhong.Size = new System.Drawing.Size(254, 201);
             this.btnDatPhong.TabIndex = 1;
             this.btnDatPhong.Text = "Đặt Phòng";
             this.btnDatPhong.UseVisualStyleBackColor = false;
             this.btnDatPhong.Click += new System.EventHandler(this.btnDatPhong_Click);
-            // 
-            // btnNhanPhong
-            // 
-            this.btnNhanPhong.BackColor = System.Drawing.Color.MediumSeaGreen;
-            this.btnNhanPhong.ForeColor = System.Drawing.Color.White;
-            this.btnNhanPhong.Location = new System.Drawing.Point(186, 102);
-            this.btnNhanPhong.Name = "btnNhanPhong";
-            this.btnNhanPhong.Size = new System.Drawing.Size(106, 201);
-            this.btnNhanPhong.TabIndex = 2;
-            this.btnNhanPhong.Text = "Nhận Phòng";
-            this.btnNhanPhong.UseVisualStyleBackColor = false;
-            this.btnNhanPhong.Click += new System.EventHandler(this.btnNhanPhong_Click);
             // 
             // btnTKDoanhThu
             // 
@@ -151,7 +138,6 @@
             this.panel2.Controls.Add(this.btnQLNhanVien);
             this.panel2.Controls.Add(this.btnQLPhong);
             this.panel2.Controls.Add(this.btnTKDoanhThu);
-            this.panel2.Controls.Add(this.btnNhanPhong);
             this.panel2.Controls.Add(this.btnDatPhong);
             this.panel2.Location = new System.Drawing.Point(12, 45);
             this.panel2.Name = "panel2";
@@ -177,9 +163,9 @@
             this.menuStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tàiKhoảnToolStripMenuItem});
-            this.menuStrip1.Location = new System.Drawing.Point(836, 9);
+            this.menuStrip1.Location = new System.Drawing.Point(986, 9);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(243, 28);
+            this.menuStrip1.Size = new System.Drawing.Size(93, 28);
             this.menuStrip1.TabIndex = 12;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -195,14 +181,14 @@
             // thôngTinTàiKhoảnToolStripMenuItem
             // 
             this.thôngTinTàiKhoảnToolStripMenuItem.Name = "thôngTinTàiKhoảnToolStripMenuItem";
-            this.thôngTinTàiKhoảnToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.thôngTinTàiKhoảnToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.thôngTinTàiKhoảnToolStripMenuItem.Text = "Thông tin tài khoản";
             this.thôngTinTàiKhoảnToolStripMenuItem.Click += new System.EventHandler(this.thôngTinTàiKhoảnToolStripMenuItem_Click);
             // 
             // đăngXuấtToolStripMenuItem
             // 
             this.đăngXuấtToolStripMenuItem.Name = "đăngXuấtToolStripMenuItem";
-            this.đăngXuấtToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.đăngXuấtToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.đăngXuấtToolStripMenuItem.Text = "Đăng xuất";
             this.đăngXuấtToolStripMenuItem.Click += new System.EventHandler(this.đăngXuấtToolStripMenuItem_Click);
             // 
@@ -226,7 +212,6 @@
 
         #endregion
         private System.Windows.Forms.Button btnDatPhong;
-        private System.Windows.Forms.Button btnNhanPhong;
         private System.Windows.Forms.Button btnTKDoanhThu;
         private System.Windows.Forms.Button btnQLPhong;
         private System.Windows.Forms.Button btnQLNhanVien;

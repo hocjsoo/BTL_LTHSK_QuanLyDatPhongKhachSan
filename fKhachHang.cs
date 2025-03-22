@@ -39,8 +39,6 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             txtEmail.Clear();
             txtTimTheoCCCD.Clear();
             txtTimTheoHoTen.Clear();
-            txtTimTheoDienThoai.Clear();
-            txtTimTheoEmail.Clear();
             selectedKhachHang = null;
         }
 
@@ -48,10 +46,8 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
         {
             string soCCCD = txtTimTheoCCCD.Text.Trim();
             string hoTen = txtTimTheoHoTen.Text.Trim();
-            string soDienThoai = txtTimTheoDienThoai.Text.Trim();
-            string email = txtTimTheoEmail.Text.Trim();
 
-            List<KhachHangDTO> khachHangList = KhachHangDAO.Instance.SearchKhachHang(soCCCD, hoTen, soDienThoai, email);
+            List<KhachHangDTO> khachHangList = KhachHangDAO.Instance.SearchKhachHang(soCCCD, hoTen);
             dgvKhachHang.DataSource = khachHangList;
             FormatDataGridView(dgvKhachHang, new string[] { });
 
@@ -69,123 +65,151 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             // Kiểm tra dữ liệu đầu vào
             if (string.IsNullOrEmpty(soCCCD) || string.IsNullOrEmpty(hoTen) || string.IsNullOrEmpty(soDienThoai))
             {
-                MessageBox.Show("Vui lòng nhập đầy đủ thông tin bắt buộc (Số CCCD, Họ Tên, Số Điện Thoại)!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin khách hàng (Số CCCD, Họ tên, Số điện thoại)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Kiểm tra định dạng số CCCD (ví dụ: 9 hoặc 12 chữ số)
-            if (!Regex.IsMatch(soCCCD, @"^\d{9}$|^\d{12}$"))
+            // Kiểm tra định dạng số CCCD (chỉ chứa số)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(soCCCD, @"^\d+$"))
             {
-                MessageBox.Show("Số CCCD phải là 9 hoặc 12 chữ số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Số CCCD chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Kiểm tra định dạng số điện thoại (ví dụ: bắt đầu bằng 0 và có 10 chữ số)
-            if (!Regex.IsMatch(soDienThoai, @"^0\d{9}$"))
+            // Kiểm tra họ tên (không chứa ký tự nguy hiểm)
+            if (hoTen.Contains("'") || hoTen.Contains(";"))
             {
-                MessageBox.Show("Số điện thoại phải bắt đầu bằng 0 và có 10 chữ số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Họ tên không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Kiểm tra định dạng email (nếu có)
-            if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            // Kiểm tra số điện thoại (chỉ chứa số)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(soDienThoai, @"^\d+$"))
             {
-                MessageBox.Show("Email không đúng định dạng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Số điện thoại chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Kiểm tra trùng số CCCD
+            // Kiểm tra email (nếu có)
+            if (!string.IsNullOrEmpty(email) && (email.Contains("'") || email.Contains(";")))
+            {
+                MessageBox.Show("Email không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Kiểm tra xem khách hàng đã tồn tại chưa
             if (KhachHangDAO.Instance.CheckKhachHangExists(soCCCD))
             {
-                MessageBox.Show("Số CCCD đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Khách hàng với số CCCD này đã tồn tại!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            try
+            // Tạo đối tượng KhachHangDTO
+            KhachHangDTO khachHang = new KhachHangDTO(
+                soCCCD,
+                hoTen,
+                soDienThoai,
+                email,
+                DateTime.Now
+            );
+
+            // Thêm khách hàng
+            if (KhachHangDAO.Instance.InsertKhachHang(khachHang))
             {
-                KhachHangDTO khachHang = new KhachHangDTO(soCCCD, hoTen, soDienThoai, email, DateTime.Now);
-                if (KhachHangDAO.Instance.InsertKhachHang(khachHang))
-                {
-                    MessageBox.Show("Thêm khách hàng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadDanhSachKhachHang();
-                    ClearForm();
-                }
-                else
-                {
-                    MessageBox.Show("Thêm khách hàng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                MessageBox.Show("Thêm khách hàng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadDanhSachKhachHang();
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Lỗi khi thêm khách hàng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Thêm khách hàng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btnSua_Click(object sender, EventArgs e)
         {
-            if (selectedKhachHang == null)
+            // Kiểm tra xem có hàng nào được chọn trong DataGridView không
+            if (dgvKhachHang.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Vui lòng chọn khách hàng để sửa!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui lòng chọn một khách hàng để sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            // Lấy số CCCD cũ từ hàng được chọn
+            string oldSoCCCD = dgvKhachHang.SelectedRows[0].Cells["SoCCCD"].Value.ToString();
+
+            // Lấy dữ liệu mới từ các TextBox
             string soCCCD = txtSoCCCD.Text.Trim();
             string hoTen = txtHoTen.Text.Trim();
             string soDienThoai = txtSoDienThoai.Text.Trim();
-            string email = txtEmail.Text.Trim();
+            string email = txtEmail.Text.Trim(); // Giả sử bạn có TextBox cho email
 
             // Kiểm tra dữ liệu đầu vào
             if (string.IsNullOrEmpty(soCCCD) || string.IsNullOrEmpty(hoTen) || string.IsNullOrEmpty(soDienThoai))
             {
-                MessageBox.Show("Vui lòng nhập đầy đủ thông tin bắt buộc (Số CCCD, Họ Tên, Số Điện Thoại)!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin khách hàng (Số CCCD, Họ tên, Số điện thoại)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Kiểm tra định dạng số CCCD
-            if (!Regex.IsMatch(soCCCD, @"^\d{9}$|^\d{12}$"))
+            // Kiểm tra định dạng số CCCD (chỉ chứa số)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(soCCCD, @"^\d+$"))
             {
-                MessageBox.Show("Số CCCD phải là 9 hoặc 12 chữ số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Số CCCD chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Kiểm tra định dạng số điện thoại
-            if (!Regex.IsMatch(soDienThoai, @"^0\d{9}$"))
+            // Kiểm tra định dạng số CCCD cũ (chỉ chứa số)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(oldSoCCCD, @"^\d+$"))
             {
-                MessageBox.Show("Số điện thoại phải bắt đầu bằng 0 và có 10 chữ số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Số CCCD cũ không hợp lệ (chỉ được chứa số)!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Kiểm tra định dạng email (nếu có)
-            if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            // Kiểm tra họ tên (không chứa ký tự nguy hiểm)
+            if (hoTen.Contains("'") || hoTen.Contains(";"))
             {
-                MessageBox.Show("Email không đúng định dạng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Họ tên không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Kiểm tra số CCCD có thay đổi không, nếu thay đổi thì kiểm tra trùng
-            if (soCCCD != selectedKhachHang.SoCCCD && KhachHangDAO.Instance.CheckKhachHangExists(soCCCD))
+            // Kiểm tra số điện thoại (chỉ chứa số)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(soDienThoai, @"^\d+$"))
             {
-                MessageBox.Show("Số CCCD đã tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Số điện thoại chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            try
+            // Kiểm tra email (nếu có)
+            if (!string.IsNullOrEmpty(email) && (email.Contains("'") || email.Contains(";")))
             {
-                KhachHangDTO khachHang = new KhachHangDTO(soCCCD, hoTen, soDienThoai, email, selectedKhachHang.NgayTao);
-                if (KhachHangDAO.Instance.UpdateKhachHang(selectedKhachHang.SoCCCD, khachHang))
-                {
-                    MessageBox.Show("Sửa khách hàng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadDanhSachKhachHang();
-                    ClearForm();
-                }
-                else
-                {
-                    MessageBox.Show("Sửa khách hàng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                MessageBox.Show("Email không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-            catch (Exception ex)
+
+            // Kiểm tra xem số CCCD mới đã tồn tại chưa (nếu số CCCD thay đổi)
+            if (soCCCD != oldSoCCCD && KhachHangDAO.Instance.CheckKhachHangExists(soCCCD))
             {
-                MessageBox.Show($"Lỗi khi sửa khách hàng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Số CCCD mới đã tồn tại!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Tạo đối tượng KhachHangDTO
+            KhachHangDTO khachHang = new KhachHangDTO(
+                soCCCD,
+                hoTen,
+                soDienThoai,
+                email,
+                DateTime.Now // Có thể giữ nguyên ngày tạo cũ nếu cần
+            );
+
+            // Sửa khách hàng
+            if (KhachHangDAO.Instance.UpdateKhachHang(oldSoCCCD, khachHang))
+            {
+                MessageBox.Show("Sửa khách hàng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadDanhSachKhachHang();
+            }
+            else
+            {
+                MessageBox.Show("Sửa khách hàng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

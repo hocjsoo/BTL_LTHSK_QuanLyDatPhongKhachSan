@@ -1,0 +1,749 @@
+﻿using BTL_QL_Dat_Phong_Khach_San.DAO;
+using BTL_QL_Dat_Phong_Khach_San.DTO;
+using BTL_QL_Dat_Phong_Khach_San.Forms;
+using BTL_QL_Dat_Phong_Khach_San;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace BTL_QL_Dat_Phong_Khach_San.DAO
+{
+    internal class Class1
+    {
+    }
+}
+Tôi sẽ phân tích đề kiểm tra của bạn một cách chi tiết, dựa trên ngữ cảnh của dự án quản lý đặt phòng khách sạn (`BTL_QL_Dat_Phong_Khach_San`) mà chúng ta đang làm việc. Đề yêu cầu thực hiện 3 nhiệm vụ liên quan đến bảng "người" (có thể là bảng `KhachHang` hoặc `NhanVien`), và tôi sẽ giả định rằng bảng "người" ở đây là bảng `KhachHang` (vì chúng ta đã làm việc với `KhachHang` trước đó). Nếu bảng "người" là bảng khác (ví dụ: `NhanVien`), bạn có thể áp dụng tương tự với các điều chỉnh nhỏ.
+
+---
+
+### **Phân tích đề bài**
+
+#### **1. Yêu cầu 1: Thêm 1 cột vào bảng liên quan đến người, thiết kế lại giao diện chức năng bảng đó**
+- **Mô tả**:
+  -Thêm một cột `NgayBatDau` (Ngày bắt đầu) vào bảng `KhachHang`.
+  - Hiển thị thêm một cột "Số năm" trong giao diện, tính bằng năm hiện tại trừ đi năm của `NgayBatDau`.
+  - Thiết kế lại giao diện chức năng của bảng `KhachHang` (form `fKhachHang`) để hỗ trợ cột mới.
+
+- **Phân tích**:
+  -**Bảng `KhachHang`**:
+    -Cần thêm cột `NgayBatDau` (kiểu `DATETIME`) vào bảng `KhachHang` trong cơ sở dữ liệu.
+    - Cập nhật lớp `KhachHangDTO` để thêm thuộc tính `NgayBatDau`.
+    - Cập nhật `KhachHangDAO` để xử lý cột mới trong các phương thức như `GetListKhachHang`, `InsertKhachHang`, `UpdateKhachHang`.
+  - **Giao diện (`fKhachHang`)**:
+    -Thêm một `DateTimePicker` để người dùng nhập `NgayBatDau` khi thêm/sửa khách hàng.
+    - Cập nhật `DataGridView` (`dgvKhachHang`) để hiển thị cột `NgayBatDau` và cột "Số năm" (tính toán động).
+  - **Cột "Số năm"**:
+    -Đây là cột tính toán, không lưu trong cơ sở dữ liệu, mà được tính dựa trên `NgayBatDau` và năm hiện tại (`DateTime.Now.Year`).
+
+#### **2. Yêu cầu 2: Thiết kế chức năng tìm kiếm người theo số năm nhập vào**
+- **Mô tả**:
+  -Cho phép người dùng nhập số năm (ví dụ: 5 năm) và tìm kiếm các khách hàng có số năm (tính từ `NgayBatDau` đến năm hiện tại) khớp với giá trị nhập vào.
+- **Phân tích**:
+  -Cần thêm một TextBox trong form `fKhachHang` để người dùng nhập số năm.
+  - Thêm một nút "Tìm kiếm theo số năm" để thực hiện tìm kiếm.
+  - Cập nhật `KhachHangDAO` để thêm phương thức tìm kiếm theo số năm, sử dụng truy vấn SQL với hàm `DATEDIFF` để tính số năm.
+
+#### **3. Yêu cầu 3: Tạo report hiển thị danh sách người theo số năm tương ứng**
+- **Mô tả**:
+  -Tạo một báo cáo (report) hiển thị danh sách khách hàng, với số năm tương ứng (tính từ `NgayBatDau` đến năm hiện tại).
+- **Phân tích**:
+  -Sử dụng công cụ báo cáo như **Microsoft Report Viewer** (RDLC) trong Visual Studio để tạo báo cáo.
+  - Tạo một form mới (ví dụ: `fReportKhachHang`) để hiển thị báo cáo.
+  - Dữ liệu báo cáo sẽ được lấy từ `KhachHangDAO`, bao gồm thông tin khách hàng và số năm (tính toán động).
+
+---
+
+### **Giải pháp chi tiết**
+
+#### **Yêu cầu 1: Thêm cột `NgayBatDau` và thiết kế lại giao diện**
+
+##### **1.1. Thêm cột `NgayBatDau` vào bảng `KhachHang`**
+- Mở SQL Server Management Studio (SSMS) và chạy truy vấn sau để thêm cột `NgayBatDau` vào bảng `KhachHang`:
+
+```sql
+ALTER TABLE KhachHang
+ADD NgayBatDau DATETIME;
+```
+
+-Nếu bảng `KhachHang` đã có dữ liệu, bạn có thể đặt giá trị mặc định cho cột `NgayBatDau` (ví dụ: ngày hiện tại):
+
+```sql
+UPDATE KhachHang
+SET NgayBatDau = GETDATE()
+WHERE NgayBatDau IS NULL;
+```
+
+##### **1.2. Cập nhật `KhachHangDTO`**
+Thêm thuộc tính `NgayBatDau` vào lớp `KhachHangDTO`:
+
+```csharp
+using System;
+using System.Data;
+
+namespace BTL_QL_Dat_Phong_Khach_San.DTO
+{
+    public class KhachHangDTO
+    {
+        public string SoCCCD { get; set; }
+        public string HoTen { get; set; }
+        public string SoDienThoai { get; set; }
+        public string Email { get; set; }
+        public DateTime NgayTao { get; set; }
+        public DateTime? NgayBatDau { get; set; } // Nullable vì có thể chưa có giá trị
+
+        public KhachHangDTO(string soCCCD, string hoTen, string soDienThoai, string email, DateTime ngayTao, DateTime? ngayBatDau)
+        {
+            SoCCCD = soCCCD;
+            HoTen = hoTen;
+            SoDienThoai = soDienThoai;
+            Email = email;
+            NgayTao = ngayTao;
+            NgayBatDau = ngayBatDau;
+        }
+
+        public KhachHangDTO(DataRow row)
+        {
+            SoCCCD = row["SoCCCD"].ToString();
+            HoTen = row["HoTen"].ToString();
+            SoDienThoai = row["SoDienThoai"].ToString();
+            Email = row["Email"].ToString();
+            NgayTao = Convert.ToDateTime(row["NgayTao"]);
+            NgayBatDau = row["NgayBatDau"] != DBNull.Value ? (DateTime?)row["NgayBatDau"] : null;
+        }
+    }
+}
+```
+
+-**Thay đổi * *:
+  -Thêm thuộc tính `NgayBatDau` (kiểu `DateTime?` để hỗ trợ giá trị `NULL`).
+  - Cập nhật cả hai constructor để xử lý `NgayBatDau`.
+
+##### **1.3. Cập nhật `KhachHangDAO`**
+Cập nhật các phương thức trong `KhachHangDAO.cs` để xử lý cột `NgayBatDau`:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Data;
+using BTL_QL_Dat_Phong_Khach_San.DTO;
+
+namespace BTL_QL_Dat_Phong_Khach_San.DAO
+{
+    public class KhachHangDAO
+    {
+        private static KhachHangDAO instance;
+
+        public static KhachHangDAO Instance
+        {
+            get { if (instance == null) instance = new KhachHangDAO(); return instance; }
+            private set { instance = value; }
+        }
+
+        private KhachHangDAO() { }
+
+        public List<KhachHangDTO> GetListKhachHang()
+        {
+            List<KhachHangDTO> list = new List<KhachHangDTO>();
+            string query = "SELECT * FROM KhachHang";
+            DataTable data = DataProvider.Instance.ExecuteQuery(query);
+            foreach (DataRow row in data.Rows)
+            {
+                list.Add(new KhachHangDTO(row));
+            }
+            return list;
+        }
+
+        public List<KhachHangDTO> SearchKhachHang(string soCCCD, string hoTen)
+        {
+            List<KhachHangDTO> list = new List<KhachHangDTO>();
+            string query = "SELECT * FROM KhachHang WHERE 1=1";
+            List<object> parameters = new List<object>();
+
+            if (!string.IsNullOrEmpty(soCCCD))
+            {
+                query += " AND SoCCCD LIKE N'%' + @SoCCCD + '%'";
+                parameters.Add(soCCCD);
+            }
+            if (!string.IsNullOrEmpty(hoTen))
+            {
+                query += " AND HoTen LIKE N'%' + @HoTen + '%'";
+                parameters.Add(hoTen);
+            }
+
+            DataTable data = DataProvider.Instance.ExecuteQuery(query, parameters.ToArray());
+            foreach (DataRow row in data.Rows)
+            {
+                list.Add(new KhachHangDTO(row));
+            }
+            return list;
+        }
+
+        public bool InsertKhachHang(KhachHangDTO khachHang)
+        {
+            try
+            {
+                string query = $"INSERT INTO KhachHang (SoCCCD, HoTen, SoDienThoai, Email, NgayTao, NgayBatDau) " +
+                              $"VALUES (N'{khachHang.SoCCCD}', N'{khachHang.HoTen}', N'{khachHang.SoDienThoai}', " +
+                              $"'{khachHang.Email}', '{khachHang.NgayTao:yyyy-MM-dd HH:mm:ss}', " +
+                              $"{(khachHang.NgayBatDau.HasValue ? $"'{khachHang.NgayBatDau.Value:yyyy-MM-dd HH:mm:ss}'" : "NULL")})";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi thêm khách hàng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public bool UpdateKhachHang(string oldSoCCCD, KhachHangDTO khachHang)
+        {
+            try
+            {
+                // Kiểm tra dữ liệu đầu vào
+                if (string.IsNullOrEmpty(khachHang.SoCCCD) || string.IsNullOrEmpty(khachHang.HoTen) || string.IsNullOrEmpty(khachHang.SoDienThoai))
+                {
+                    throw new Exception("Số CCCD, Họ tên, Số điện thoại không được để trống!");
+                }
+
+                if (!System.Text.RegularExpressions.Regex.IsMatch(khachHang.SoCCCD, @"^\d+$"))
+                {
+                    throw new Exception("Số CCCD chỉ được chứa số!");
+                }
+
+                if (khachHang.HoTen.Contains("'") || khachHang.HoTen.Contains(";"))
+                {
+                    throw new Exception("Họ tên không được chứa ký tự đặc biệt như ' hoặc ;!");
+                }
+
+                if (!System.Text.RegularExpressions.Regex.IsMatch(khachHang.SoDienThoai, @"^\d+$"))
+                {
+                    throw new Exception("Số điện thoại chỉ được chứa số!");
+                }
+
+                if (!string.IsNullOrEmpty(khachHang.Email) && (khachHang.Email.Contains("'") || khachHang.Email.Contains(";")))
+                {
+                    throw new Exception("Email không được chứa ký tự đặc biệt như ' hoặc ;!");
+                }
+
+                if (string.IsNullOrEmpty(oldSoCCCD))
+                {
+                    throw new Exception("Số CCCD cũ không được để trống!");
+                }
+
+                if (!System.Text.RegularExpressions.Regex.IsMatch(oldSoCCCD, @"^\d+$"))
+                {
+                    throw new Exception("Số CCCD cũ chỉ được chứa số!");
+                }
+
+                string query = $"UPDATE KhachHang SET " +
+                              $"SoCCCD = N'{khachHang.SoCCCD}', " +
+                              $"HoTen = N'{khachHang.HoTen}', " +
+                              $"SoDienThoai = N'{khachHang.SoDienThoai}', " +
+                              $"Email = '{khachHang.Email}', " +
+                              $"NgayBatDau = {(khachHang.NgayBatDau.HasValue ? $"'{khachHang.NgayBatDau.Value:yyyy-MM-dd HH:mm:ss}'" : "NULL")} " +
+                              $"WHERE SoCCCD = N'{oldSoCCCD}'";
+                return DataProvider.Instance.ExecuteNonQuery(query) > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi sửa khách hàng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public bool DeleteKhachHang(string soCCCD)
+        {
+            try
+            {
+                string query = "DELETE FROM KhachHang WHERE SoCCCD=@SoCCCD";
+                object[] parameters = new object[] { soCCCD };
+                return DataProvider.Instance.ExecuteNonQuery(query, parameters) > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Lỗi khi xóa khách hàng: {ex.Message}", "Lỗi", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public bool CheckKhachHangExists(string soCCCD)
+        {
+            string query = $"SELECT COUNT(*) FROM KhachHang WHERE SoCCCD = N'{soCCCD}'";
+            return (int)DataProvider.Instance.ExecuteScalar(query) > 0;
+        }
+
+        public bool CheckKhachHangInUse(string soCCCD)
+        {
+            string query = "SELECT COUNT(*) FROM DatPhong WHERE SoCCCDKhachHang=@SoCCCDKhachHang UNION ALL SELECT COUNT(*) FROM HoaDon WHERE SoCCCDKhachHang=@SoCCCDKhachHang";
+            object[] parameters = new object[] { soCCCD, soCCCD };
+            DataTable data = DataProvider.Instance.ExecuteQuery(query, parameters);
+            foreach (DataRow row in data.Rows)
+            {
+                if ((int)row[0] > 0)
+                    return true;
+            }
+            return false;
+        }
+    }
+}
+```
+
+-**Thay đổi * *:
+  -Cập nhật `InsertKhachHang` và `UpdateKhachHang` để xử lý cột `NgayBatDau`.
+  - `NgayBatDau` là nullable, nên kiểm tra `HasValue` để ghi `NULL` nếu không có giá trị.
+
+##### **1.4. Thiết kế lại giao diện `fKhachHang`**
+- **Thêm `DateTimePicker` cho `NgayBatDau`**:
+  -Trong form `fKhachHang`, thêm một `DateTimePicker` (gọi là `dtpNgayBatDau`) để người dùng chọn ngày bắt đầu.
+  - Đặt thuộc tính `Format` của `dtpNgayBatDau` thành `Custom` và `CustomFormat` thành `dd/MM/yyyy` để hiển thị ngày theo định dạng dễ đọc.
+- **Cập nhật `DataGridView` để hiển thị cột `NgayBatDau` và cột "Số năm"**:
+  -Thêm cột `NgayBatDau` vào `dgvKhachHang`.
+  - Thêm cột "Số năm" (tính toán động) vào `dgvKhachHang`.
+
+Dưới đây là mã cập nhật cho `fKhachHang.cs`:
+
+```csharp
+private void LoadKhachHangList()
+{
+    List<KhachHangDTO> list = KhachHangDAO.Instance.GetListKhachHang();
+    dgvKhachHang.DataSource = null; // Xóa dữ liệu cũ
+    dgvKhachHang.Columns.Clear(); // Xóa cột cũ
+
+    // Tạo DataTable để hiển thị dữ liệu
+    DataTable dt = new DataTable();
+    dt.Columns.Add("SoCCCD", typeof(string));
+    dt.Columns.Add("HoTen", typeof(string));
+    dt.Columns.Add("SoDienThoai", typeof(string));
+    dt.Columns.Add("Email", typeof(string));
+    dt.Columns.Add("NgayTao", typeof(DateTime));
+    dt.Columns.Add("NgayBatDau", typeof(DateTime));
+    dt.Columns.Add("SoNam", typeof(int)); // Cột tính toán
+
+    foreach (KhachHangDTO khachHang in list)
+    {
+        int soNam = khachHang.NgayBatDau.HasValue ? DateTime.Now.Year - khachHang.NgayBatDau.Value.Year : 0;
+        dt.Rows.Add(
+            khachHang.SoCCCD,
+            khachHang.HoTen,
+            khachHang.SoDienThoai,
+            khachHang.Email,
+            khachHang.NgayTao,
+            khachHang.NgayBatDau,
+            soNam
+        );
+    }
+
+    dgvKhachHang.DataSource = dt;
+
+    // Đặt tiêu đề cột
+    dgvKhachHang.Columns["SoCCCD"].HeaderText = "Số CCCD";
+    dgvKhachHang.Columns["HoTen"].HeaderText = "Họ Tên";
+    dgvKhachHang.Columns["SoDienThoai"].HeaderText = "Số Điện Thoại";
+    dgvKhachHang.Columns["Email"].HeaderText = "Email";
+    dgvKhachHang.Columns["NgayTao"].HeaderText = "Ngày Tạo";
+    dgvKhachHang.Columns["NgayBatDau"].HeaderText = "Ngày Bắt Đầu";
+    dgvKhachHang.Columns["SoNam"].HeaderText = "Số Năm";
+}
+
+private void btnThem_Click(object sender, EventArgs e)
+{
+    string soCCCD = txtSoCCCD.Text.Trim();
+    string hoTen = txtHoTen.Text.Trim();
+    string soDienThoai = txtSoDienThoai.Text.Trim();
+    string email = txtEmail.Text.Trim();
+    DateTime? ngayBatDau = dtpNgayBatDau.Value; // Lấy giá trị từ DateTimePicker
+
+    // Kiểm tra dữ liệu đầu vào
+    if (string.IsNullOrEmpty(soCCCD) || string.IsNullOrEmpty(hoTen) || string.IsNullOrEmpty(soDienThoai))
+    {
+        MessageBox.Show("Vui lòng nhập đầy đủ thông tin khách hàng (Số CCCD, Họ tên, Số điện thoại)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return;
+    }
+
+    // Kiểm tra định dạng số CCCD (chỉ chứa số)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(soCCCD, @"^\d+$"))
+    {
+        MessageBox.Show("Số CCCD chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra họ tên (không chứa ký tự nguy hiểm)
+    if (hoTen.Contains("'") || hoTen.Contains(";"))
+    {
+        MessageBox.Show("Họ tên không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra số điện thoại (chỉ chứa số)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(soDienThoai, @"^\d+$"))
+    {
+        MessageBox.Show("Số điện thoại chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra email (nếu có)
+    if (!string.IsNullOrEmpty(email) && (email.Contains("'") || email.Contains(";")))
+    {
+        MessageBox.Show("Email không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra xem khách hàng đã tồn tại chưa
+    if (KhachHangDAO.Instance.CheckKhachHangExists(soCCCD))
+    {
+        MessageBox.Show("Khách hàng với số CCCD này đã tồn tại!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return;
+    }
+
+    // Tạo đối tượng KhachHangDTO
+    KhachHangDTO khachHang = new KhachHangDTO(
+        soCCCD,
+        hoTen,
+        soDienThoai,
+        email,
+        DateTime.Now,
+        ngayBatDau
+    );
+
+    // Thêm khách hàng
+    if (KhachHangDAO.Instance.InsertKhachHang(khachHang))
+    {
+        MessageBox.Show("Thêm khách hàng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        LoadKhachHangList(); // Tải lại danh sách khách hàng
+    }
+    else
+    {
+        MessageBox.Show("Thêm khách hàng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+}
+
+private void btnSua_Click(object sender, EventArgs e)
+{
+    // Kiểm tra xem có hàng nào được chọn trong DataGridView không
+    if (dgvKhachHang.SelectedRows.Count == 0)
+    {
+        MessageBox.Show("Vui lòng chọn một khách hàng để sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return;
+    }
+
+    // Lấy số CCCD cũ từ hàng được chọn
+    string oldSoCCCD = dgvKhachHang.SelectedRows[0].Cells["SoCCCD"].Value.ToString();
+
+    // Lấy dữ liệu mới từ các TextBox
+    string soCCCD = txtSoCCCD.Text.Trim();
+    string hoTen = txtHoTen.Text.Trim();
+    string soDienThoai = txtSoDienThoai.Text.Trim();
+    string email = txtEmail.Text.Trim();
+    DateTime? ngayBatDau = dtpNgayBatDau.Value; // Lấy giá trị từ DateTimePicker
+
+    // Kiểm tra dữ liệu đầu vào
+    if (string.IsNullOrEmpty(soCCCD) || string.IsNullOrEmpty(hoTen) || string.IsNullOrEmpty(soDienThoai))
+    {
+        MessageBox.Show("Vui lòng nhập đầy đủ thông tin khách hàng (Số CCCD, Họ tên, Số điện thoại)!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return;
+    }
+
+    // Kiểm tra định dạng số CCCD (chỉ chứa số)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(soCCCD, @"^\d+$"))
+    {
+        MessageBox.Show("Số CCCD chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra định dạng số CCCD cũ (chỉ chứa số)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(oldSoCCCD, @"^\d+$"))
+    {
+        MessageBox.Show("Số CCCD cũ không hợp lệ (chỉ được chứa số)!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra họ tên (không chứa ký tự nguy hiểm)
+    if (hoTen.Contains("'") || hoTen.Contains(";"))
+    {
+        MessageBox.Show("Họ tên không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra số điện thoại (chỉ chứa số)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(soDienThoai, @"^\d+$"))
+    {
+        MessageBox.Show("Số điện thoại chỉ được chứa số!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra email (nếu có)
+    if (!string.IsNullOrEmpty(email) && (email.Contains("'") || email.Contains(";")))
+    {
+        MessageBox.Show("Email không được chứa ký tự đặc biệt như ' hoặc ;!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // Kiểm tra xem số CCCD mới đã tồn tại chưa (nếu số CCCD thay đổi)
+    if (soCCCD != oldSoCCCD && KhachHangDAO.Instance.CheckKhachHangExists(soCCCD))
+    {
+        MessageBox.Show("Số CCCD mới đã tồn tại!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return;
+    }
+
+    // Tạo đối tượng KhachHangDTO
+    KhachHangDTO khachHang = new KhachHangDTO(
+        soCCCD,
+        hoTen,
+        soDienThoai,
+        email,
+        DateTime.Now, // Có thể giữ nguyên ngày tạo cũ nếu cần
+        ngayBatDau
+    );
+
+    // Sửa khách hàng
+    if (KhachHangDAO.Instance.UpdateKhachHang(oldSoCCCD, khachHang))
+    {
+        MessageBox.Show("Sửa khách hàng thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        LoadKhachHangList(); // Tải lại danh sách khách hàng
+    }
+    else
+    {
+        MessageBox.Show("Sửa khách hàng thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+}
+
+private void dgvKhachHang_SelectionChanged(object sender, EventArgs e)
+{
+    if (dgvKhachHang.SelectedRows.Count > 0)
+    {
+        DataGridViewRow row = dgvKhachHang.SelectedRows[0];
+        txtSoCCCD.Text = row.Cells["SoCCCD"].Value.ToString();
+        txtHoTen.Text = row.Cells["HoTen"].Value.ToString();
+        txtSoDienThoai.Text = row.Cells["SoDienThoai"].Value.ToString();
+        txtEmail.Text = row.Cells["Email"].Value.ToString();
+        if (row.Cells["NgayBatDau"].Value != DBNull.Value)
+        {
+            dtpNgayBatDau.Value = Convert.ToDateTime(row.Cells["NgayBatDau"].Value);
+        }
+        else
+        {
+            dtpNgayBatDau.Value = DateTime.Now; // Giá trị mặc định nếu NgayBatDau là NULL
+        }
+    }
+}
+```
+
+- **Thay đổi**:
+  - Cập nhật `LoadKhachHangList` để hiển thị cột `NgayBatDau` và cột "Số năm" (tính toán động).
+  - Cập nhật `btnThem_Click` và `btnSua_Click` để lấy giá trị `NgayBatDau` từ `dtpNgayBatDau`.
+  - Cập nhật `dgvKhachHang_SelectionChanged` để điền giá trị `NgayBatDau` vào `dtpNgayBatDau`.
+
+#### **Yêu cầu 2: Thiết kế chức năng tìm kiếm theo số năm**
+
+##### **2.1. Thêm giao diện tìm kiếm**
+- Trong form `fKhachHang`, thêm:
+  - Một `TextBox` (gọi là `txtSoNam`) để người dùng nhập số năm.
+  - Một nút "Tìm kiếm" (gọi là `btnTimKiemTheoSoNam`) để thực hiện tìm kiếm.
+
+##### **2.2. Thêm phương thức tìm kiếm vào `KhachHangDAO`**
+Thêm phương thức `SearchKhachHangBySoNam` vào `KhachHangDAO.cs`:
+
+```csharp
+public List<KhachHangDTO> SearchKhachHangBySoNam(int soNam)
+{
+    List<KhachHangDTO> list = new List<KhachHangDTO>();
+    string query = $"SELECT * FROM KhachHang WHERE DATEDIFF(YEAR, NgayBatDau, GETDATE()) = {soNam}";
+    DataTable data = DataProvider.Instance.ExecuteQuery(query);
+    foreach (DataRow row in data.Rows)
+    {
+        list.Add(new KhachHangDTO(row));
+    }
+    return list;
+}
+```
+
+- **Giải thích**:
+  - Sử dụng hàm `DATEDIFF(YEAR, NgayBatDau, GETDATE())` để tính số năm từ `NgayBatDau` đến ngày hiện tại.
+  - Truy vấn trả về các khách hàng có số năm khớp với `soNam`.
+
+##### **2.3. Thêm sự kiện cho nút tìm kiếm**
+Thêm sự kiện `btnTimKiemTheoSoNam_Click` vào `fKhachHang.cs`:
+
+```csharp
+private void btnTimKiemTheoSoNam_Click(object sender, EventArgs e)
+{
+    if (!int.TryParse(txtSoNam.Text.Trim(), out int soNam) || soNam < 0)
+    {
+        MessageBox.Show("Vui lòng nhập số năm hợp lệ (số nguyên không âm)!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    List<KhachHangDTO> list = KhachHangDAO.Instance.SearchKhachHangBySoNam(soNam);
+    dgvKhachHang.DataSource = null;
+    dgvKhachHang.Columns.Clear();
+
+    DataTable dt = new DataTable();
+    dt.Columns.Add("SoCCCD", typeof(string));
+    dt.Columns.Add("HoTen", typeof(string));
+    dt.Columns.Add("SoDienThoai", typeof(string));
+    dt.Columns.Add("Email", typeof(string));
+    dt.Columns.Add("NgayTao", typeof(DateTime));
+    dt.Columns.Add("NgayBatDau", typeof(DateTime));
+    dt.Columns.Add("SoNam", typeof(int));
+
+    foreach (KhachHangDTO khachHang in list)
+    {
+        int soNamTinhToan = khachHang.NgayBatDau.HasValue ? DateTime.Now.Year - khachHang.NgayBatDau.Value.Year : 0;
+        dt.Rows.Add(
+            khachHang.SoCCCD,
+            khachHang.HoTen,
+            khachHang.SoDienThoai,
+            khachHang.Email,
+            khachHang.NgayTao,
+            khachHang.NgayBatDau,
+            soNamTinhToan
+        );
+    }
+
+    dgvKhachHang.DataSource = dt;
+
+    // Đặt tiêu đề cột
+    dgvKhachHang.Columns["SoCCCD"].HeaderText = "Số CCCD";
+    dgvKhachHang.Columns["HoTen"].HeaderText = "Họ Tên";
+    dgvKhachHang.Columns["SoDienThoai"].HeaderText = "Số Điện Thoại";
+    dgvKhachHang.Columns["Email"].HeaderText = "Email";
+    dgvKhachHang.Columns["NgayTao"].HeaderText = "Ngày Tạo";
+    dgvKhachHang.Columns["NgayBatDau"].HeaderText = "Ngày Bắt Đầu";
+    dgvKhachHang.Columns["SoNam"].HeaderText = "Số Năm";
+}
+```
+
+- **Giải thích**:
+  - Kiểm tra dữ liệu đầu vào (`txtSoNam`) để đảm bảo là số nguyên không âm.
+  - Gọi `SearchKhachHangBySoNam` để lấy danh sách khách hàng theo số năm.
+  - Hiển thị kết quả trong `dgvKhachHang`.
+
+#### **Yêu cầu 3: Tạo report hiển thị danh sách người theo số năm**
+
+##### **3.1. Tạo report bằng Microsoft Report Viewer**
+1. **Thêm Report Viewer vào dự án**:
+   - Trong Visual Studio, vào `Toolbox`, kéo thả một `ReportViewer` (nếu không thấy, bạn cần cài đặt gói `Microsoft.Reporting.WinForms` qua NuGet Package Manager).
+   - Tạo một form mới (gọi là `fReportKhachHang`) và thêm `ReportViewer` (gọi là `reportViewer1`) vào form.
+
+2. **Tạo file báo cáo RDLC**:
+   - Trong Solution Explorer, nhấp chuột phải vào dự án > `Add` > `New Item` > Chọn `Report` (gọi là `ReportKhachHang.rdlc`).
+   - Mở `ReportKhachHang.rdlc`, thiết kế báo cáo:
+     - Kéo thả một `Table` vào vùng thiết kế.
+     - Thêm các cột: `SoCCCD`, `HoTen`, `SoDienThoai`, `Email`, `NgayBatDau`, `SoNam`.
+     - Đặt tiêu đề báo cáo (ví dụ: "Danh sách khách hàng theo số năm").
+
+3. **Tạo DataSet cho báo cáo**:
+   - Trong Solution Explorer, nhấp chuột phải vào dự án > `Add` > `New Item` > Chọn `DataSet` (gọi là `KhachHangDataSet.xsd`).
+   - Mở `KhachHangDataSet.xsd`, thêm một `DataTable` (gọi là `KhachHang`).
+   - Thêm các cột: `SoCCCD`, `HoTen`, `SoDienThoai`, `Email`, `NgayBatDau`, `SoNam`.
+
+4. **Liên kết DataSet với báo cáo**:
+   - Mở `ReportKhachHang.rdlc`, vào `Report Data` (Ctrl+Alt+D).
+   - Nhấp chuột phải vào `Datasets` > `Add Dataset` > Chọn `KhachHangDataSet` và `DataTable` là `KhachHang`.
+   - Liên kết các cột trong `Table` của báo cáo với các cột trong `DataSet`.
+
+##### **3.2. Tạo form hiển thị báo cáo**
+Tạo form `fReportKhachHang.cs`:
+
+```csharp
+using System;
+using System.Data;
+using System.Windows.Forms;
+using Microsoft.Reporting.WinForms;
+
+namespace BTL_QL_Dat_Phong_Khach_San
+{
+    public partial class fReportKhachHang : Form
+    {
+        public fReportKhachHang()
+        {
+            InitializeComponent();
+        }
+
+        private void fReportKhachHang_Load(object sender, EventArgs e)
+        {
+            // Lấy danh sách khách hàng
+            var list = KhachHangDAO.Instance.GetListKhachHang();
+
+            // Tạo DataTable cho báo cáo
+            DataTable dt = new DataTable();
+            dt.Columns.Add("SoCCCD", typeof(string));
+            dt.Columns.Add("HoTen", typeof(string));
+            dt.Columns.Add("SoDienThoai", typeof(string));
+            dt.Columns.Add("Email", typeof(string));
+            dt.Columns.Add("NgayBatDau", typeof(DateTime));
+            dt.Columns.Add("SoNam", typeof(int));
+
+            foreach (var khachHang in list)
+            {
+                int soNam = khachHang.NgayBatDau.HasValue ? DateTime.Now.Year - khachHang.NgayBatDau.Value.Year : 0;
+                dt.Rows.Add(
+                    khachHang.SoCCCD,
+                    khachHang.HoTen,
+                    khachHang.SoDienThoai,
+                    khachHang.Email,
+                    khachHang.NgayBatDau,
+                    soNam
+                );
+            }
+
+            // Thiết lập báo cáo
+            reportViewer1.LocalReport.ReportEmbeddedResource = "BTL_QL_Dat_Phong_Khach_San.ReportKhachHang.rdlc";
+            reportViewer1.LocalReport.DataSources.Clear();
+            reportViewer1.LocalReport.DataSources.Add(new ReportDataSource("KhachHang", dt));
+            reportViewer1.RefreshReport();
+        }
+    }
+}
+```
+
+- **Giải thích**:
+  - Tạo `DataTable` chứa dữ liệu khách hàng và số năm (tính toán động).
+  - Liên kết `DataTable` với báo cáo thông qua `ReportDataSource`.
+  - Hiển thị báo cáo trong `reportViewer1`.
+
+##### **3.3. Thêm nút hiển thị báo cáo trong `fKhachHang`**
+Thêm một nút "Xem báo cáo" (`btnXemBaoCao`) vào `fKhachHang.cs`:
+
+```csharp
+private void btnXemBaoCao_Click(object sender, EventArgs e)
+{
+    fReportKhachHang reportForm = new fReportKhachHang();
+    reportForm.ShowDialog();
+}
+```
+
+---
+
+### **Tổng kết**
+
+#### **Yêu cầu 1: Thêm cột `NgayBatDau` và thiết kế lại giao diện**
+- Thêm cột `NgayBatDau` vào bảng `KhachHang`.
+- Cập nhật `KhachHangDTO` và `KhachHangDAO` để xử lý cột mới.
+- Thiết kế lại `fKhachHang`:
+  - Thêm `DateTimePicker` (`dtpNgayBatDau`).
+  - Cập nhật `dgvKhachHang` để hiển thị cột `NgayBatDau` và cột "Số năm".
+
+#### **Yêu cầu 2: Tìm kiếm theo số năm**
+- Thêm `TextBox` (`txtSoNam`) và nút "Tìm kiếm" (`btnTimKiemTheoSoNam`) vào `fKhachHang`.
+- Thêm phương thức `SearchKhachHangBySoNam` vào `KhachHangDAO`.
+- Xử lý sự kiện `btnTimKiemTheoSoNam_Click` để hiển thị kết quả tìm kiếm.
+
+#### **Yêu cầu 3: Tạo report**
+- Tạo file báo cáo `ReportKhachHang.rdlc` và DataSet `KhachHangDataSet`.
+- Tạo form `fReportKhachHang` để hiển thị báo cáo.
+- Thêm nút "Xem báo cáo" vào `fKhachHang` để mở form báo cáo.
+
+#### **Hành động tiếp theo**
+- Thực hiện các bước như hướng dẫn.
+- Build và chạy thử form `fKhachHang` để kiểm tra các chức năng:
+  - Thêm/sửa khách hàng với `NgayBatDau`.
+  - Tìm kiếm theo số năm.
+  - Xem báo cáo.
+- Nếu gặp lỗi, báo cáo kết quả và cung cấp thông tin chi tiết để tôi hỗ trợ thêm.
+
+Hãy thử áp dụng và thông báo kết quả nhé! Nếu bạn cần làm rõ thêm hoặc muốn điều chỉnh (ví dụ: bảng "người" là `NhanVien` thay vì `KhachHang`), hãy cho tôi biết.

@@ -1,24 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using BTL_QL_Dat_Phong_Khach_San.DAO;
 using BTL_QL_Dat_Phong_Khach_San.DTO;
+using CrystalDecisions.CrystalReports.Engine;
+using CrystalDecisions.Shared;
+using CrystalDecisions.Windows.Forms;
 
 namespace BTL_QL_Dat_Phong_Khach_San.Forms
 {
-    public partial class fDangKyDichVu : Form
+    public partial class fDangKyDichVuMoi : Form
     {
         private string maNhanVien;
         private string soCCCDKhachHang;
         private List<DangKyDichVuDTO> danhSachDichVuDaChon;
         private string currentMaHoaDon;
 
-        public fDangKyDichVu(string maNhanVien)
+        public fDangKyDichVuMoi(string maNhanVien)
         {
             InitializeComponent();
-            this.maNhanVien = maNhanVien ?? "NV001";
+            this.maNhanVien = maNhanVien ?? "NV001"; // Mã nhân viên mặc định nếu null
             this.soCCCDKhachHang = null;
             this.danhSachDichVuDaChon = new List<DangKyDichVuDTO>();
             this.currentMaHoaDon = null;
@@ -52,10 +56,12 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             data.Columns.Add("TenDichVu", typeof(string));
             data.Columns.Add("GiaDichVu", typeof(decimal));
             data.Columns.Add("LoaiDichVu", typeof(string));
+
             foreach (DichVuDTO dichVu in DichVuDAO.Instance.GetListDichVu())
             {
                 data.Rows.Add(dichVu.MaDichVu, dichVu.TenDichVu, dichVu.GiaDichVu, dichVu.LoaiDichVu);
             }
+
             dgvDichVu.DataSource = data;
             FormatDataGridView(dgvDichVu, new[] { "GiaDichVu" });
         }
@@ -63,6 +69,7 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
         private void ClearForm()
         {
             txtTimTheoCCCD.Clear();
+            txtTimTheoHoTen.Clear();
             txtHoTen.Clear();
             txtDienThoai.Clear();
             txtEmail.Clear();
@@ -80,14 +87,18 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             currentMaHoaDon = null;
         }
 
-        private void btnTimKiem_Click(object sender, EventArgs e)
+        private void btnTimKiemKhachHang_Click(object sender, EventArgs e)
         {
             string soCCCD = txtTimTheoCCCD.Text.Trim();
-            string hoTen = txtHoTen.Text.Trim();
-            string soDienThoai = txtDienThoai.Text.Trim();
-            string email = txtEmail.Text.Trim();
+            string hoTen = txtTimTheoHoTen.Text.Trim();
 
-            var khachHangs = KhachHangDAO.Instance.SearchKhachHang(soCCCD, hoTen, soDienThoai, email);
+            if (string.IsNullOrEmpty(soCCCD) && string.IsNullOrEmpty(hoTen))
+            {
+                MessageBox.Show("Vui lòng nhập ít nhất một thông tin (CCCD hoặc Họ tên) để tìm kiếm!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var khachHangs = KhachHangDAO.Instance.SearchKhachHang(soCCCD, hoTen);
             if (khachHangs.Count > 0)
             {
                 var khachHang = khachHangs[0];
@@ -104,7 +115,7 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             }
         }
 
-        private void btnThemKhachHang_Click(object sender, EventArgs e)
+        private void btnChonKhachHang_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(soCCCDKhachHang))
             {
@@ -126,6 +137,7 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             data.Columns.Add("TenDichVu", typeof(string));
             data.Columns.Add("GiaDichVu", typeof(decimal));
             data.Columns.Add("LoaiDichVu", typeof(string));
+
             foreach (DichVuDTO dichVu in DichVuDAO.Instance.SearchDichVu("", tenDichVu))
             {
                 if (string.IsNullOrEmpty(loaiDichVu) || loaiDichVu == "" || dichVu.LoaiDichVu == loaiDichVu)
@@ -136,6 +148,7 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                     }
                 }
             }
+
             dgvDichVu.DataSource = data;
             FormatDataGridView(dgvDichVu, new[] { "GiaDichVu" });
         }
@@ -195,6 +208,10 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 CapNhatTongTien();
                 MessageBox.Show("Thêm dịch vụ thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+            else
+            {
+                MessageBox.Show("Thêm dịch vụ thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void LoadDanhSachDichVuDaChon()
@@ -209,13 +226,29 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 data.Columns.Add("DonGia", typeof(decimal));
                 data.Columns.Add("SoLuong", typeof(int));
                 data.Columns.Add("TongChiPhi", typeof(decimal));
+
                 foreach (DangKyDichVuDTO dichVu in danhSachDichVuDaChon)
                 {
+                    if (string.IsNullOrEmpty(dichVu.MaDichVu))
+                    {
+                        MessageBox.Show($"Dịch vụ với MaDichVu rỗng được tìm thấy cho khách hàng {soCCCDKhachHang}. Vui lòng kiểm tra dữ liệu trong bảng DangKyDichVu.", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        continue;
+                    }
+
                     string loaiDichVu = GetLoaiDichVu(dichVu.MaDichVu);
                     string tenDichVu = GetTenDichVu(dichVu.MaDichVu);
                     decimal donGia = GetGiaDichVu(dichVu.MaDichVu);
-                    data.Rows.Add(dichVu.MaDichVu, loaiDichVu, tenDichVu, donGia, dichVu.SoLuong, dichVu.TongChiPhi);
+
+                    if (string.IsNullOrEmpty(loaiDichVu) || string.IsNullOrEmpty(tenDichVu) || donGia == 0)
+                    {
+                        MessageBox.Show($"Dịch vụ {dichVu.MaDichVu} không tồn tại trong bảng DichVu. Vui lòng kiểm tra dữ liệu.", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        continue;
+                    }
+
+                    decimal tongChiPhi = donGia * dichVu.SoLuong;
+                    data.Rows.Add(dichVu.MaDichVu, loaiDichVu, tenDichVu, donGia, dichVu.SoLuong, tongChiPhi);
                 }
+
                 dgvDichVuDaChon.DataSource = data;
                 FormatDataGridView(dgvDichVuDaChon, new[] { "DonGia", "TongChiPhi" });
             }
@@ -227,22 +260,40 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
 
         private string GetLoaiDichVu(string maDichVu)
         {
-            string query = $"SELECT LoaiDichVu FROM DichVu WHERE MaDichVu = N'{maDichVu}'";
-            var result = DataProvider.Instance.ExecuteScalar(query);
+            if (string.IsNullOrEmpty(maDichVu))
+            {
+                return "";
+            }
+
+            string query = "SELECT LoaiDichVu FROM DichVu WHERE MaDichVu = @MaDichVu";
+            object[] parameters = new object[] { maDichVu };
+            var result = DataProvider.Instance.ExecuteScalar(query, parameters);
             return result?.ToString() ?? "";
         }
 
         private string GetTenDichVu(string maDichVu)
         {
-            string query = $"SELECT TenDichVu FROM DichVu WHERE MaDichVu = N'{maDichVu}'";
-            var result = DataProvider.Instance.ExecuteScalar(query);
+            if (string.IsNullOrEmpty(maDichVu))
+            {
+                return "";
+            }
+
+            string query = "SELECT TenDichVu FROM DichVu WHERE MaDichVu = @MaDichVu";
+            object[] parameters = new object[] { maDichVu };
+            var result = DataProvider.Instance.ExecuteScalar(query, parameters);
             return result?.ToString() ?? "";
         }
 
         private decimal GetGiaDichVu(string maDichVu)
         {
-            string query = $"SELECT GiaDichVu FROM DichVu WHERE MaDichVu = N'{maDichVu}'";
-            var result = DataProvider.Instance.ExecuteScalar(query);
+            if (string.IsNullOrEmpty(maDichVu))
+            {
+                return 0;
+            }
+
+            string query = "SELECT GiaDichVu FROM DichVu WHERE MaDichVu = @MaDichVu";
+            object[] parameters = new object[] { maDichVu };
+            var result = DataProvider.Instance.ExecuteScalar(query, parameters);
             return result != null ? Convert.ToDecimal(result) : 0;
         }
 
@@ -251,7 +302,8 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             decimal tongTien = 0;
             foreach (DangKyDichVuDTO dichVu in danhSachDichVuDaChon)
             {
-                tongTien += dichVu.TongChiPhi;
+                decimal donGia = GetGiaDichVu(dichVu.MaDichVu);
+                tongTien += donGia * dichVu.SoLuong;
             }
             txtSoTien.Text = tongTien.ToString("N0");
         }
@@ -271,26 +323,17 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 return;
             }
 
-            if (!decimal.TryParse(txtSoTien.Text.Replace(",", ""), out decimal soTien) || soTien <= 0)
-            {
-                MessageBox.Show("Số tiền không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
             decimal tongChiPhi = 0;
             foreach (DangKyDichVuDTO dichVu in danhSachDichVuDaChon)
             {
-                tongChiPhi += dichVu.TongChiPhi;
-            }
-            if (soTien < tongChiPhi)
-            {
-                MessageBox.Show("Số tiền thanh toán không đủ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                decimal donGia = GetGiaDichVu(dichVu.MaDichVu);
+                tongChiPhi += donGia * dichVu.SoLuong;
             }
 
             string maHoaDon = $"HD{DateTime.Now:yyyyMMddHHmmss}";
             var chiTietList = new List<ChiTietHoaDonDTO>();
             int index = 1;
+
             foreach (DangKyDichVuDTO dichVu in danhSachDichVuDaChon)
             {
                 string loaiDichVu = GetLoaiDichVu(dichVu.MaDichVu);
@@ -304,13 +347,15 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 }
 
                 string maChiTiet = $"{maHoaDon}_{index++}";
-                chiTietList.Add(new ChiTietHoaDonDTO(maChiTiet, maHoaDon, dichVu.MaDichVu, loaiDichVu, tenDichVu, giaDichVu, dichVu.SoLuong, dichVu.TongChiPhi));
+                decimal tongChiPhiDichVu = giaDichVu * dichVu.SoLuong;
+                chiTietList.Add(new ChiTietHoaDonDTO(maChiTiet, maHoaDon, dichVu.MaDichVu, dichVu.SoLuong, tongChiPhiDichVu));
             }
 
-            var hoaDon = new HoaDonDTO(maHoaDon, soCCCDKhachHang, maNhanVien, tongChiPhi, soTien, phuongThuc, DateTime.Now, chiTietList);
+            // Giả sử khách hàng thanh toán đủ, nên TienThanhToan = TongChiPhi
+            decimal tienThanhToan = tongChiPhi;
+            var hoaDon = new HoaDonDTO(maHoaDon, soCCCDKhachHang, maNhanVien, tongChiPhi, tienThanhToan, phuongThuc, DateTime.Now, chiTietList);
             if (HoaDonDAO.Instance.InsertHoaDon(hoaDon))
             {
-                // Lưu chi tiết hóa đơn vào bảng ChiTietHoaDon
                 foreach (var chiTiet in chiTietList)
                 {
                     if (!HoaDonDAO.Instance.InsertChiTietHoaDon(chiTiet))
@@ -320,7 +365,6 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                     }
                 }
 
-                // Xóa các dịch vụ đã đăng ký sau khi lưu vào ChiTietHoaDon
                 foreach (var dichVu in danhSachDichVuDaChon.ToList())
                 {
                     if (DangKyDichVuDAO.Instance.DeleteDangKyDichVu(dichVu.SoCCCDKhachHang, dichVu.MaDichVu))
@@ -339,6 +383,10 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 CapNhatTongTien();
                 MessageBox.Show("Thanh toán thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+            else
+            {
+                MessageBox.Show("Thanh toán thất bại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void btnInBienNhan_Click(object sender, EventArgs e)
@@ -349,26 +397,78 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 return;
             }
 
-            var hoaDon = HoaDonDAO.Instance.GetHoaDonByMaHoaDon(currentMaHoaDon);
-            if (hoaDon != null)
+            try
             {
-                string noiDung = $"BIÊN NHẬN\nMã HĐ: {hoaDon.MaHoaDon}\nKhách hàng: {hoaDon.SoCCCDKhachHang}\n" +
-                                $"Nhân viên: {hoaDon.MaNhanVien}\nTổng chi phí: {hoaDon.TongChiPhi:N0}\n" +
-                                $"Thanh toán: {hoaDon.TienThanhToan:N0}\nPhương thức: {hoaDon.PhuongThucThanhToan}\n" +
-                                $"Ngày lập: {hoaDon.NgayLapHoaDon:dd/MM/yyyy HH:mm:ss}\n\nChi tiết:\n";
-                foreach (ChiTietHoaDonDTO chiTiet in hoaDon.ChiTietHoaDons)
+                // Lấy thông tin hóa đơn
+                var hoaDon = HoaDonDAO.Instance.GetHoaDonByMaHoaDon(currentMaHoaDon);
+                if (hoaDon == null)
                 {
-                    noiDung += $"{chiTiet.LoaiDichVu} - {chiTiet.TenDichVu}: {chiTiet.TongChiPhi:N0} (Giá: {chiTiet.GiaDichVu:N0}, Số lượng: {chiTiet.SoLuong})\n";
+                    MessageBox.Show("Không tìm thấy hóa đơn!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
-                MessageBox.Show(noiDung, "In biên nhận", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Tạo báo cáo
+                ReportDocument report = new ReportDocument();
+                string reportPath = Path.Combine(Application.StartupPath, "rptHoaDon.rpt");
+
+                // Kiểm tra xem file báo cáo có tồn tại không
+                if (!File.Exists(reportPath))
+                {
+                    throw new FileNotFoundException($"Không tìm thấy file báo cáo tại: {reportPath}");
+                }
+
+                report.Load(reportPath);
+
+                // Thiết lập thông tin kết nối cơ sở dữ liệu
+                ConnectionInfo connectionInfo = new ConnectionInfo
+                {
+                    ServerName = "HocND",
+                    DatabaseName = "BTL_QuanLyKS",
+                    IntegratedSecurity = true
+                };
+
+                foreach (Table table in report.Database.Tables)
+                {
+                    TableLogOnInfo tableLogOnInfo = table.LogOnInfo;
+                    tableLogOnInfo.ConnectionInfo = connectionInfo;
+                    table.ApplyLogOnInfo(tableLogOnInfo);
+                }
+
+                // Truyền tham số vào báo cáo
+                try
+                {
+                    report.SetParameterValue("MaHoaDon", currentMaHoaDon);
+                }
+                catch (Exception paramEx)
+                {
+                    MessageBox.Show($"Lỗi khi truyền tham số vào báo cáo: {paramEx.Message}\nKiểm tra xem tham số MaHoaDon có tồn tại trong báo cáo không.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Hiển thị báo cáo trong một form mới
+                Form reportForm = new Form
+                {
+                    Text = "Hóa đơn - " + currentMaHoaDon,
+                    Size = new System.Drawing.Size(800, 600)
+                };
+
+                CrystalReportViewer viewer = new CrystalReportViewer
+                {
+                    Dock = DockStyle.Fill,
+                    ReportSource = report,
+                    ToolPanelView = CrystalDecisions.Windows.Forms.ToolPanelViewType.None
+                };
+
+                reportForm.Controls.Add(viewer);
+                reportForm.ShowDialog();
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Không tìm thấy hóa đơn!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi in hóa đơn: {ex.Message}\nInner Exception: {ex.InnerException?.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void btnXoa_Click(object sender, EventArgs e)
+        private void btnXoaDichVu_Click(object sender, EventArgs e)
         {
             if (dgvDichVuDaChon.SelectedRows.Count > 0)
             {

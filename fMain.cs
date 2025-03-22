@@ -76,7 +76,7 @@ namespace BTL_QL_Dat_Phong_Khach_San
 
         private void button1_Click(object sender, EventArgs e) // Đặt lại tên nút thành btnDangKyDichVu
         {
-            fDangKyDichVu f = new fDangKyDichVu(maNhanVien); // Truyền MaNhanVien
+            fDangKyDichVuMoi f = new fDangKyDichVuMoi(maNhanVien); // Truyền MaNhanVien
             this.Hide();
             f.ShowDialog();
             this.Show();
@@ -92,7 +92,7 @@ namespace BTL_QL_Dat_Phong_Khach_San
 
         private void btnTKDoanhThu_Click(object sender, EventArgs e)
         {
-            fDoanhThu f = new fDoanhThu(maNhanVien); // Truyền MaNhanVien
+            fDoanhThu f = new fDoanhThu(); // Truyền MaNhanVien
             this.Hide();
             f.ShowDialog();
             this.Show();

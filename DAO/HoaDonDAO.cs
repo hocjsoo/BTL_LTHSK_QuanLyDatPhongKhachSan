@@ -48,10 +48,30 @@ namespace BTL_QL_Dat_Phong_Khach_San.DAO
         {
             try
             {
-                string query = $"INSERT INTO HoaDon (MaHoaDon, SoCCCDKhachHang, MaNhanVien, TongChiPhi, TienThanhToan, " +
-                              $"PhuongThucThanhToan, NgayLapHoaDon) " +
-                              $"VALUES (N'{hoaDon.MaHoaDon}', N'{hoaDon.SoCCCDKhachHang}', N'{hoaDon.MaNhanVien}', {hoaDon.TongChiPhi}, {hoaDon.TienThanhToan}, " +
-                              $"N'{hoaDon.PhuongThucThanhToan}', '{hoaDon.NgayLapHoaDon:yyyy-MM-dd HH:mm:ss}')";
+                // Kiểm tra các giá trị NOT NULL
+                if (string.IsNullOrEmpty(hoaDon.MaHoaDon))
+                    throw new ArgumentException("Mã hóa đơn không được để trống!");
+                if (string.IsNullOrEmpty(hoaDon.SoCCCDKhachHang))
+                    throw new ArgumentException("Số CCCD khách hàng không được để trống!");
+                if (hoaDon.TongChiPhi < 0)
+                    throw new ArgumentException("Tổng chi phí không được âm!");
+                if (hoaDon.TienThanhToan < 0)
+                    throw new ArgumentException("Tiền thanh toán không được âm!");
+
+                // Làm sạch chuỗi PhuongThucThanhToan để loại bỏ ký tự đặc biệt nguy hiểm
+                string phuongThucThanhToan = hoaDon.PhuongThucThanhToan?.Replace("'", "''") ?? "";
+
+                string query = $"INSERT INTO HoaDon (MaHoaDon, SoCCCDKhachHang, MaNhanVien, TongChiPhi, TienThanhToan, PhuongThucThanhToan, NgayLapHoaDon) " +
+                              $"VALUES (N'{hoaDon.MaHoaDon}', N'{hoaDon.SoCCCDKhachHang}', " +
+                              $"{(string.IsNullOrEmpty(hoaDon.MaNhanVien) ? "NULL" : $"N'{hoaDon.MaNhanVien}'")}, " +
+                              $"{hoaDon.TongChiPhi.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)}, " +
+                              $"{hoaDon.TienThanhToan.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)}, " +
+                              $"{(string.IsNullOrEmpty(phuongThucThanhToan) ? "NULL" : $"N'{phuongThucThanhToan}'")}, " +
+                              $"'{hoaDon.NgayLapHoaDon:yyyy-MM-dd HH:mm:ss}')";
+
+                // Logging để kiểm tra
+                MessageBox.Show($"Query: {query}", "Debug Info");
+
                 return DataProvider.Instance.ExecuteNonQuery(query) > 0;
             }
             catch (Exception ex)
@@ -67,7 +87,9 @@ namespace BTL_QL_Dat_Phong_Khach_San.DAO
             try
             {
                 string query = $"INSERT INTO ChiTietHoaDon (MaChiTietHoaDon, MaHoaDon, MaDichVu, SoLuong, TongChiPhi) " +
-                              $"VALUES (N'{chiTiet.MaChiTietHoaDon}', N'{chiTiet.MaHoaDon}', N'{chiTiet.MaDichVu}', {chiTiet.SoLuong}, {chiTiet.TongChiPhi})";
+                              $"VALUES (N'{chiTiet.MaChiTietHoaDon}', N'{chiTiet.MaHoaDon}', N'{chiTiet.MaDichVu}', {chiTiet.SoLuong}, " +
+                              $"{chiTiet.TongChiPhi.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)})";
+
                 return DataProvider.Instance.ExecuteNonQuery(query) > 0;
             }
             catch (Exception ex)
@@ -81,11 +103,12 @@ namespace BTL_QL_Dat_Phong_Khach_San.DAO
         public List<HoaDonDTO> SearchHoaDon(string maHoaDon, DateTime tuNgay, DateTime denNgay)
         {
             List<HoaDonDTO> list = new List<HoaDonDTO>();
-            string query = $"SELECT * FROM HoaDon WHERE NgayLapHoaDon BETWEEN '{tuNgay:yyyy-MM-dd}' AND '{denNgay:yyyy-MM-dd}'";
+            string query = $"SELECT * FROM HoaDon WHERE NgayLapHoaDon BETWEEN '{tuNgay:yyyy-MM-dd HH:mm:ss}' AND '{denNgay:yyyy-MM-dd HH:mm:ss}'";
             if (!string.IsNullOrEmpty(maHoaDon))
             {
                 query += $" AND MaHoaDon = N'{maHoaDon}'";
             }
+
             DataTable data = DataProvider.Instance.ExecuteQuery(query);
             foreach (DataRow row in data.Rows)
             {

@@ -16,14 +16,14 @@ namespace BTL_QL_Dat_Phong_Khach_San {
     using CrystalDecisions.CrystalReports.Engine;
     
     
-    public class CrystalReport1 : ReportClass {
+    public class rptHoaDon : ReportClass {
         
-        public CrystalReport1() {
+        public rptHoaDon() {
         }
         
         public override string ResourceName {
             get {
-                return "CrystalReport1.rpt";
+                return "rptHoaDon.rpt";
             }
             set {
                 // Do nothing
@@ -41,7 +41,7 @@ namespace BTL_QL_Dat_Phong_Khach_San {
         
         public override string FullResourceName {
             get {
-                return "BTL_QL_Dat_Phong_Khach_San.CrystalReport1.rpt";
+                return "BTL_QL_Dat_Phong_Khach_San.rptHoaDon.rpt";
             }
             set {
                 // Do nothing
@@ -66,7 +66,7 @@ namespace BTL_QL_Dat_Phong_Khach_San {
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section Section3 {
+        public CrystalDecisions.CrystalReports.Engine.Section GroupHeaderSection1 {
             get {
                 return this.ReportDefinition.Sections[2];
             }
@@ -74,7 +74,7 @@ namespace BTL_QL_Dat_Phong_Khach_San {
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section Section4 {
+        public CrystalDecisions.CrystalReports.Engine.Section Section3 {
             get {
                 return this.ReportDefinition.Sections[3];
             }
@@ -82,17 +82,41 @@ namespace BTL_QL_Dat_Phong_Khach_San {
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section Section5 {
+        public CrystalDecisions.CrystalReports.Engine.Section GroupFooterSection1 {
             get {
                 return this.ReportDefinition.Sections[4];
+            }
+        }
+        
+        [Browsable(false)]
+        [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public CrystalDecisions.CrystalReports.Engine.Section Section4 {
+            get {
+                return this.ReportDefinition.Sections[5];
+            }
+        }
+        
+        [Browsable(false)]
+        [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public CrystalDecisions.CrystalReports.Engine.Section Section5 {
+            get {
+                return this.ReportDefinition.Sections[6];
+            }
+        }
+        
+        [Browsable(false)]
+        [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public CrystalDecisions.Shared.IParameterField Parameter_MaHoaDon {
+            get {
+                return this.DataDefinition.ParameterFields[0];
             }
         }
     }
     
     [System.Drawing.ToolboxBitmapAttribute(typeof(CrystalDecisions.Shared.ExportOptions), "report.bmp")]
-    public class CachedCrystalReport1 : Component, ICachedReport {
+    public class CachedrptHoaDon : Component, ICachedReport {
         
-        public CachedCrystalReport1() {
+        public CachedrptHoaDon() {
         }
         
         [Browsable(false)]
@@ -129,7 +153,7 @@ namespace BTL_QL_Dat_Phong_Khach_San {
         }
         
         public virtual CrystalDecisions.CrystalReports.Engine.ReportDocument CreateReport() {
-            CrystalReport1 rpt = new CrystalReport1();
+            rptHoaDon rpt = new rptHoaDon();
             rpt.Site = this.Site;
             return rpt;
         }

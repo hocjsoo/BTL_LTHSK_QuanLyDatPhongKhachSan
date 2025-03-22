@@ -4,6 +4,9 @@ using System.Data;
 using System.Windows.Forms;
 using BTL_QL_Dat_Phong_Khach_San.DAO;
 using BTL_QL_Dat_Phong_Khach_San.DTO;
+using CrystalDecisions.CrystalReports.Engine;
+using CrystalDecisions.Windows.Forms;
+using CrystalDecisions.Shared;
 
 namespace BTL_QL_Dat_Phong_Khach_San
 {
@@ -81,25 +84,40 @@ namespace BTL_QL_Dat_Phong_Khach_San
                 return;
             }
 
-            DataGridViewRow row = dgvHoaDon.SelectedRows[0];
-            string maHoaDon = row.Cells["MaHoaDon"].Value.ToString();
-            var hoaDon = HoaDonDAO.Instance.GetHoaDonByMaHoaDon(maHoaDon);
-            if (hoaDon != null)
+            try
             {
-                string noiDung = $"HÓA ĐƠN\nMã HĐ: {hoaDon.MaHoaDon}\nKhách hàng: {hoaDon.SoCCCDKhachHang}\n" +
-                                $"Nhân viên: {hoaDon.MaNhanVien}\nTổng chi phí: {hoaDon.TongChiPhi:N0}\n" +
-                                $"Thanh toán: {hoaDon.TienThanhToan:N0}\nPhương thức: {hoaDon.PhuongThucThanhToan}\n" +
-                                $"Ngày lập: {hoaDon.NgayLapHoaDon:dd/MM/yyyy HH:mm:ss}\n\nChi tiết:\n";
-                DataTable dichVuData = HoaDonDAO.Instance.GetDichVuByMaHoaDon(maHoaDon);
-                foreach (DataRow dichVuRow in dichVuData.Rows)
+                // Lấy MaHoaDon từ dòng được chọn
+                DataGridViewRow row = dgvHoaDon.SelectedRows[0];
+                string maHoaDon = row.Cells["MaHoaDon"].Value.ToString();
+
+                // Tạo đối tượng báo cáo
+                ReportDocument report = new ReportDocument();
+                string reportPath = Application.StartupPath + "\\rptHoaDon.rpt";
+                report.Load(reportPath);
+
+                // Thiết lập tham số MaHoaDon
+                report.SetParameterValue("MaHoaDon", maHoaDon);
+
+                // Tạo form mới để hiển thị báo cáo
+                Form reportForm = new Form
                 {
-                    noiDung += $"{dichVuRow["TenDichVu"]}: {dichVuRow["TongChiPhi"]:N0} (Số lượng: {dichVuRow["SoLuong"]})\n";
-                }
-                MessageBox.Show(noiDung, "In hóa đơn", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Text = "Hóa đơn - " + maHoaDon,
+                    Size = new System.Drawing.Size(800, 600)
+                };
+
+                CrystalReportViewer viewer = new CrystalReportViewer
+                {
+                    Dock = DockStyle.Fill,
+                    ReportSource = report,
+                    ToolPanelView = CrystalDecisions.Windows.Forms.ToolPanelViewType.None
+                };
+
+                reportForm.Controls.Add(viewer);
+                reportForm.ShowDialog();
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Không tìm thấy hóa đơn!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi in hóa đơn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

@@ -4,6 +4,10 @@ using System.Data;
 using System.Windows.Forms;
 using BTL_QL_Dat_Phong_Khach_San.DAO;
 using BTL_QL_Dat_Phong_Khach_San.DTO;
+using CrystalDecisions.CrystalReports.Engine;
+using CrystalDecisions.Windows.Forms;
+
+using CrystalDecisions.Shared;
 
 namespace BTL_QL_Dat_Phong_Khach_San.Forms
 {
@@ -258,9 +262,8 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                         danhSachDatPhong.Add(new DatPhongDTO(maDatPhong, soCCCDKhachHang, maPhong, maNhanVien,
                             ngayDatPhong, ngayNhanPhong, ngayTraPhongDuKien, null, tongChiPhi, tienDatCoc, false));
 
-                        string hoaDon = TaoHoaDon(maDatPhong, soCCCDKhachHang, maPhong, ngayDatPhong, ngayNhanPhong,
+                        TaoHoaDon(maDatPhong, soCCCDKhachHang, maPhong, ngayDatPhong, ngayNhanPhong,
                             ngayTraPhongDuKien, tongChiPhi, tienDatCoc);
-                        MessageBox.Show(hoaDon, "Hóa đơn đặt phòng", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                         LoadDanhSachDatPhong();
                         LoadDanhSachPhong();
@@ -281,12 +284,13 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
             }
         }
 
-        private string TaoHoaDon(string maDatPhong, string soCCCDKhachHang, string maPhong,
-            DateTime ngayDatPhong, DateTime ngayNhanPhong, DateTime ngayTraPhongDuKien,
-            decimal tongChiPhi, decimal tienDatCoc)
+        private void TaoHoaDon(string maDatPhong, string soCCCDKhachHang, string maPhong,
+     DateTime ngayDatPhong, DateTime ngayNhanPhong, DateTime ngayTraPhongDuKien,
+     decimal tongChiPhi, decimal tienDatCoc)
         {
             try
             {
+                // Lấy thông tin khách hàng
                 string queryKhachHang = $"SELECT HoTen, SoDienThoai FROM KhachHang WHERE SoCCCD = '{soCCCDKhachHang}'";
                 DataTable khachHangData = DataProvider.Instance.ExecuteQuery(queryKhachHang);
                 string hoTen = khachHangData.Rows.Count > 0 ? khachHangData.Rows[0]["HoTen"].ToString() : "Không xác định";
@@ -295,29 +299,51 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 string loaiPhong = GetLoaiPhong(maPhong);
                 decimal giaPhong = GetGiaPhong(maPhong);
                 TimeSpan soNgay = ngayTraPhongDuKien - ngayNhanPhong;
+                decimal soTienCanThanhToan = tongChiPhi - tienDatCoc;
 
-                return $"===== HÓA ĐƠN ĐẶT PHÒNG =====\n\n" +
-                       $"Mã đặt phòng: {maDatPhong}\n" +
-                       $"Tên khách hàng: {hoTen}\n" +
-                       $"Số CCCD: {soCCCDKhachHang}\n" +
-                       $"Số điện thoại: {soDienThoai}\n\n" +
-                       $"Phòng: {maPhong}\n" +
-                       $"Loại phòng: {loaiPhong}\n" +
-                       $"Giá phòng: {giaPhong:N0} VNĐ/ngày\n\n" +
-                       $"Ngày đặt phòng: {ngayDatPhong:dd/MM/yyyy HH:mm:ss}\n" +
-                       $"Ngày nhận phòng: {ngayNhanPhong:dd/MM/yyyy HH:mm:ss}\n" +
-                       $"Ngày trả phòng dự kiến: {ngayTraPhongDuKien:dd/MM/yyyy HH:mm:ss}\n" +
-                       $"Số ngày: {soNgay.Days} ngày\n\n" +
-                       $"Tổng chi phí: {tongChiPhi:N0} VNĐ\n" +
-                       $"Tiền đặt cọc: {tienDatCoc:N0} VNĐ\n" +
-                       $"Số tiền cần thanh toán: {(tongChiPhi - tienDatCoc):N0} VNĐ\n\n" +
-                       $"Ngày lập hóa đơn: {DateTime.Now:dd/MM/yyyy HH:mm:ss}\n" +
-                       "=============================";
+                // Tạo đối tượng báo cáo
+                ReportDocument report = new ReportDocument();
+                string reportPath = Application.StartupPath + "\\rptHoaDonDatPhong.rpt";
+                report.Load(reportPath);
+
+                // Truyền các tham số vào báo cáo
+                report.SetParameterValue("MaDatPhong", maDatPhong);
+                report.SetParameterValue("TenKhachHang", hoTen);
+                report.SetParameterValue("SoCCCD", soCCCDKhachHang);
+                report.SetParameterValue("SoDienThoai", soDienThoai);
+                report.SetParameterValue("MaNhanVien", maNhanVien);
+                report.SetParameterValue("NgayLapHoaDon", DateTime.Now);
+                report.SetParameterValue("MaPhong", maPhong);
+                report.SetParameterValue("LoaiPhong", loaiPhong);
+                report.SetParameterValue("GiaPhong", giaPhong);
+                report.SetParameterValue("NgayDatPhong", ngayDatPhong);
+                report.SetParameterValue("NgayNhanPhong", ngayNhanPhong);
+                report.SetParameterValue("NgayTraPhongDuKien", ngayTraPhongDuKien);
+                report.SetParameterValue("SoNgay", soNgay.Days);
+                report.SetParameterValue("TongChiPhi", tongChiPhi);
+                report.SetParameterValue("TienDatCoc", tienDatCoc);
+                report.SetParameterValue("SoTienCanThanhToan", soTienCanThanhToan);
+
+                // Tạo form mới để hiển thị báo cáo
+                Form reportForm = new Form
+                {
+                    Text = "Hóa đơn đặt phòng - " + maDatPhong,
+                    Size = new System.Drawing.Size(800, 600)
+                };
+
+                CrystalReportViewer viewer = new CrystalReportViewer
+                {
+                    Dock = DockStyle.Fill,
+                    ReportSource = report,
+                    ToolPanelView = CrystalDecisions.Windows.Forms.ToolPanelViewType.None
+                };
+
+                reportForm.Controls.Add(viewer);
+                reportForm.ShowDialog();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khi tạo hóa đơn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return "Không thể tạo hóa đơn!";
             }
         }
 
@@ -339,9 +365,8 @@ namespace BTL_QL_Dat_Phong_Khach_San.Forms
                 decimal tongChiPhi = Convert.ToDecimal(row.Cells["TongChiPhi"].Value);
                 decimal tienDatCoc = Convert.ToDecimal(row.Cells["TienDatCoc"].Value);
 
-                string hoaDon = TaoHoaDon(maDatPhong, soCCCDKhachHang, row.Cells["MaPhong"].Value.ToString(),
+                TaoHoaDon(maDatPhong, soCCCDKhachHang, row.Cells["MaPhong"].Value.ToString(),
                     ngayDatPhong, ngayNhanPhong, ngayTraPhongDuKien, tongChiPhi, tienDatCoc);
-                MessageBox.Show(hoaDon, "Hóa đơn đặt phòng", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
